@@ -1,0 +1,36 @@
+{
+    "architecture": {
+      "layers": 4,
+      "neurons": [3, 4, 4, 3],
+      "activation_functions": ["relu", "softmax", "linear"]
+    },
+    "neurons":[
+       [1,1,1],
+       [2,2,2,2],
+       [3,3,3,3],
+       [4,4,4]
+    ],
+    "weights": [
+      {
+        "layer_index": 0,
+        "type": "zero"
+      },
+      {
+        "layer_index": 1,
+        "type": "uniform",
+        "parameter": [0, 5, 99]
+      },
+      {
+        "layer_index": 2,
+        "type": "normal",
+        "parameter": [0, 5, 99]
+      }
+    ],
+    "training_parameters": {
+      "batch_size": 32,
+      "learning_rate": 0.01,
+      "epochs": 50,
+      "loss_function": "categorical_cross-entropy"
+    }
+  }
+  
