@@ -57,39 +57,71 @@ class NeuralNetwork:
         self.hidden_layers_size = hidden_layers_size
         self.hidden_layers_function = hidden_layers_function
         self.output_layer_function = output_layer_function
+        self.init_type = init_type
         
         self.initiateLayers(bias)
         
     def initiateLayers(self, bias):
         self.layers = []
-        self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], bias, init_type))
+        self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], bias, self.init_type))
         for i in range(1, self.n_hiddenlayer):
-            self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], bias, init_type))
-        self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, bias, init_type))
+            self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], bias, self.init_type))
+        self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, bias, self.init_type))
     
     def forward(self, input_array):
         for layer in self.layers:
             input_array = np.append(input_array, 1)
             input_array = layer.multiply(input_array)
         return input_array
+    
+class Engine():
+    def __init__(self,
+                 n_hiddenlayer,
+                 hidden_layers_size,
+                 hidden_layers_function,
+                 output_layer_function,
+                 bias,
+                 init_type,
+                 data_train,
+                 data_train_class,
+                 learning_rate):
+        self.data_train = data_train
+        self.data_train_class = data_train_class
+        self.learning_rate = learning_rate
 
-array_input = np.array([2,2,3,4,5,-1])
-outputs = 7
-hidden_layers = 5
-hidden_sizes = [4, 3, 1, 6, 4]
-bias=5
-init_type="he"
+        self.neural = NeuralNetwork(n_input=data_train.shape[1],
+                                    n_output=np.unique(data_train_class).shape[0],
+                                    n_hiddenlayer=n_hiddenlayer,
+                                    hidden_layers_size=hidden_layers_size,
+                                    hidden_layers_function=hidden_layers_function,
+                                    output_layer_function=output_layer_function,
+                                    bias=bias,
+                                    init_type=init_type)
+    
+    def batch_train(self):
+        np.set_printoptions(precision=3, suppress=True)
 
-function = lambda x:x
-hidden_function = [function, function, function, function, function]
+        for i in range(10):
+            output = self.neural.forward(self.data_train[i, :])
+            print(output)
 
-neural = NeuralNetwork(n_input=len(array_input),
-                       n_output=outputs,
-                       n_hiddenlayer=hidden_layers,
-                       hidden_layers_size=hidden_sizes,
-                       hidden_layers_function=hidden_function,
-                       output_layer_function=function,
-                       bias=bias,
-                       init_type=init_type)
+# array_input = np.array([2,2,3,4,5,-1])
+# outputs = 7
+# hidden_layers = 5
+# hidden_sizes = [4, 3, 1, 6, 4]
+# bias=5
+# init_type="he"
 
-print(neural.forward(array_input))
+# function = lambda x:x
+# hidden_function = [function, function, function, function, function]
+
+# neural = NeuralNetwork(n_input=len(array_input),
+#                        n_output=outputs,
+#                        n_hiddenlayer=hidden_layers,
+#                        hidden_layers_size=hidden_sizes,
+#                        hidden_layers_function=hidden_function,
+#                        output_layer_function=function,
+#                        bias=bias,
+#                        init_type=init_type)
+
+# print(neural.forward(array_input))
