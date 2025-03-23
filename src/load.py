@@ -3,7 +3,7 @@ from classes import *
 
 def load_init(name : str) :    
     # Open and read a JSON file
-    path = "input/"
+    path = "data/"
     with open(path+name, "r") as file:
         data = json.load(file)  # Parse JSON into a Python dictionary
 
