@@ -22,11 +22,25 @@ class Layer:
         
         self.weight_matrix[-1, :] = bias
 
+        # self.input = None
+        # self.z = None
+        self.output = None
+        self.delta = None
+
     def multiply(self, input_array):
+        print("input array boi")
+        print(len(input_array))
+        print("weight")
+        print(len(self.weight_matrix))
         ret = np.matmul(input_array, self.weight_matrix)
-        ret = self.activation_function(ret)
-        return ret
+        self.output = self.activation_function(ret)
+        return self.output
     
+    def update_weights(self, input_array, learning_rate):
+        """ Update weights using backpropagation gradient descent """
+        gradient = np.outer(input_array, self.delta)
+        self.weight_matrix -= learning_rate * gradient
+        
     def initiateWeightRDUniform(self, seed=0, lower_bound=0, upper_bound=1):
         np.random.seed(seed)
         self.weight_matrix = np.random.uniform(lower_bound, upper_bound, (self.prev_n_nodes, self.n_neurons))
@@ -74,6 +88,36 @@ class NeuralNetwork:
             input_array = layer.multiply(input_array)
         return input_array
     
+    def backward(self, expected_output, learning_rate):
+        """ Backpropagation algorithm """
+        # Compute error at output layer
+        last_layer = self.layers[-1]
+        last_layer.delta = (last_layer.output - expected_output) * self.output_layer_function(last_layer.z, derivative=True)
+
+        # Propagate error backwards
+        for i in reversed(range(len(self.layers) - 1)):
+            layer = self.layers[i]
+            next_layer = self.layers[i + 1]
+
+            # Compute delta for hidden layers
+            error_term = np.dot(next_layer.weight_matrix[:-1], next_layer.delta)
+            layer.delta = error_term * self.hidden_layers_function[i](layer.z, derivative=True)
+
+        # Update weights
+        for layer in self.layers:
+            layer.update_weights(learning_rate)
+
+    def train(self, inputs, expected_outputs, epochs, learning_rate):
+        """ Train the neural network using backpropagation """
+        for epoch in range(epochs):
+            for i in range(len(inputs)):
+                self.forward(inputs[i])
+                self.backward(expected_outputs[i], learning_rate)
+
+            if epoch % 1 == 0:
+                loss = np.mean((expected_outputs - self.forward(inputs)) ** 2)
+                print(f"Epoch {epoch}, Loss: {loss:.5f}")
+                
 class Engine():
     def __init__(self,
                  n_hiddenlayer,
@@ -104,6 +148,12 @@ class Engine():
         for i in range(10):
             output = self.neural.forward(self.data_train[i, :])
             print(output)
+            
+    def train_backprop(self) :
+        for i in range(10):
+            print("LEN")
+            print((self.data_train[i, :]))
+            self.neural.train(self.data_train[i, :], self.data_train_class[i], 1, 0.1)
 
 # array_input = np.array([2,2,3,4,5,-1])
 # outputs = 7

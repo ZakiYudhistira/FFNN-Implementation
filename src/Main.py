@@ -22,6 +22,7 @@ def loadPickle():
     data_train_class_temp = open('./data/test_data_train_class', 'rb')
     data_train_class = pickle.load(data_train_class_temp)
     data_train_class_temp.close()
+
     return data_train, data_train_class
 
 data_train, data_train_class = loadPickle()
@@ -47,4 +48,5 @@ engine = Engine.Engine(n_hiddenlayer=hidden_layers,
                        data_train=data_train,
                        data_train_class=data_train_class,
                        learning_rate=0.01)
-engine.batch_train()
+# engine.batch_train()
+engine.train_backprop()
