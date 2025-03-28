@@ -33,12 +33,12 @@ def getPositiveFLoat(prompt):
 
 def getLossFunction():
     while True:
-        print("1. mse\n2. crossentropy\n3. catcrossentrpy")
+        print("1. mean_squared_error\n2. binary_cross_entropy\n3. categorical_cross_entropy")
         loss_function = str(input(">>> Input loss function: "))
         loss_dict = {
-            "1": "mse",
-            "2": "crossentropy",
-            "3": "catcrossentrpy"
+            "1": "mean_squared_error",
+            "2": "binary_cross_entropy",
+            "3": "categorical_cross_entropy"
         }
         if loss_function in loss_dict.keys():
             return loss_dict[loss_function]

@@ -1,12 +1,20 @@
 import numpy as np
 import random as rd
 import pickle
+import LossFunction as lf
 
 class Layer:
-    def __init__(self, neurons, prev_neurons, activation_function, bias, init_type="random-uniform"):
+    def __init__(self,
+                 neurons,
+                 prev_neurons,
+                 activation_function,
+                 activation_function_derivative,
+                 bias,
+                 init_type="random-uniform"):
         self.n_neurons = neurons
         self.prev_n_nodes = prev_neurons+1
         self.activation_function = activation_function
+        self.activation_function_derivative = activation_function_derivative
         param1, param2, init_type = init_type
 
         if init_type=="random-uniform":
@@ -62,23 +70,39 @@ class Layer:
         self.weight_matrix = np.random.normal(0, variance, (self.prev_n_nodes, self.n_neurons))
 
 class NeuralNetwork:
-    def __init__(self, n_input, n_output, n_hiddenlayer, hidden_layers_size, hidden_layers_function, output_layer_function, bias, init_type):
+    def __init__(self,
+                 n_input,
+                 n_output,
+                 n_hiddenlayer,
+                 hidden_layers_size,
+                 hidden_layers_function,
+                 hidden_layers_function_derivative,
+                 output_layer_function,
+                 output_layer_function_derivative,
+                 bias,
+                 init_type,
+                 error_function,
+                 error_function_derivative):
         self.n_input = n_input
         self.n_output = n_output
         self.n_hiddenlayer = n_hiddenlayer
         self.hidden_layers_size = hidden_layers_size
         self.hidden_layers_function = hidden_layers_function
+        self.hidden_layers_function_derivative = hidden_layers_function_derivative
         self.output_layer_function = output_layer_function
+        self.output_layer_function_derivative = output_layer_function_derivative
         self.init_type = init_type
+        self.error_function = error_function
+        self.error_function_derivative = error_function_derivative
         
         self.initiateLayers(bias)
         
     def initiateLayers(self, bias):
         self.layers = []
-        self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], bias, self.init_type))
+        self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], self.hidden_layers_function_derivative[0], bias, self.init_type))
         for i in range(1, self.n_hiddenlayer):
-            self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], bias, self.init_type))
-        self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, bias, self.init_type))
+            self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], self.hidden_layers_function_derivative[i], bias, self.init_type))
+        self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, self.output_layer_function_derivative, bias, self.init_type))
     
     def forward(self, input_array):
         for layer in self.layers:
@@ -132,36 +156,52 @@ class Engine():
                  n_hiddenlayer,
                  hidden_layers_size,
                  hidden_layers_function,
+                 hidden_layers_function_derivative,
                  output_layer_function,
+                 output_layer_function_derivative,
                  bias,
                  init_type,
                  data_train,
                  data_train_class,
                  learning_rate,
                  epochs,
-                 batch_size):
+                 batch_size,
+                 error_function,
+                 error_function_derivative):
         self.data_train = data_train
         self.data_train_class = data_train_class
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.batch_size = batch_size
+        self.error_function = error_function
+        self.error_function_derivative = error_function_derivative
 
         self.neural = NeuralNetwork(n_input=data_train.shape[1],
                                     n_output=np.unique(data_train_class).shape[0],
                                     n_hiddenlayer=n_hiddenlayer,
                                     hidden_layers_size=hidden_layers_size,
                                     hidden_layers_function=hidden_layers_function,
+                                    hidden_layers_function_derivative=hidden_layers_function_derivative,
                                     output_layer_function=output_layer_function,
+                                    output_layer_function_derivative=output_layer_function_derivative,
                                     bias=bias,
-                                    init_type=init_type)
+                                    init_type=init_type,
+                                    error_function=error_function,
+                                    error_function_derivative=error_function_derivative)
     
     def batchTrain(self):
         counter = 0
         while(counter <= self.data_train.shape[0]):
             upper_index = min(counter+self.batch_size, self.data_train.shape[0])
             batch_process = self.data_train[counter:upper_index]
+            expected_result = self.data_train_class[counter:upper_index]
+            counter += self.batch_size
+
             result = self.neural.forwardBatch(batch_process)
 
+            error = np.mean((expected_result - result) ** 2)
+            print(f"Error: {error}")
+            break
             
     def train_backprop(self) :
         for i in range(10):

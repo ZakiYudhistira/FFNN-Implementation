@@ -3,7 +3,7 @@
     "batch_size": 5,
     "learning_rate": 0.01,
     "epochs": 15,
-    "loss_function": "mse",
+    "loss_function": "mean_squared_error",
     "hidden_layer_count": 3,
     "hidden_layer_sizes": [
         5,
