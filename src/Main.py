@@ -87,10 +87,17 @@ def start_program():
                             init_type=init_type_information,
                             data_train=None,
                             data_train_class=None)
+        
+        save_flag = input(">>> Do you want to save this configuration? (Y/N): ")
+
+        if(save_flag.upper() == "Y"):
+            Configuration.saveConfigtoJSON(config, f"./config/{config_name}.json")
     elif(choice == 1):
         name_path = input(">>> Input your Artificial Neural Network Configuration file: ")
+        main_engine = Engine.Engine.loadANNfromPickle(name_path)
+        return main_engine, True
 
-    
+
     print(">>> Configuration <<<")
     print("Using configuration:", config.config_name)
     print("Batch size:", config.batch_size)
@@ -104,26 +111,44 @@ def start_program():
     print("Bias:", config.bias)
     print("Init type:", config.init_type)
 
-    save_flag = input(">>> Do you want to save this configuration? (Y/N): ")
-
-    if(save_flag.upper() == "Y"):
-        Configuration.saveConfigtoJSON(config, f"./config/{config_name}.json")
-
-    return config
+    return config, False
 
 def initiateEngine(config: Configuration, data_train, data_train_class):
+    hidden_layer_activations = [activation_functions_dict[func] for func in config.hidden_layer_activations]
     main_engine = Engine.Engine(config.hidden_layer_count,
                          config.hidden_layer_sizes,
-                         config.hidden_layer_activations,
-                         config.output_activation,
+                         hidden_layer_activations,
+                         activation_functions_dict[config.output_activation],
                          config.bias,
                          config.init_type,
                          data_train,
                          data_train_class,
-                         config.learning_rate)
+                         config.learning_rate,
+                         config.epochs,
+                         config.batch_size)
     return main_engine
+
+def train(engine):
+    print(">>> Training <<<")
+    print("Do you want to train the ANN? (Y/N): ", end="")
+    while True:
+        try:
+            choice = input()
+            if (choice.upper() == "Y" or choice.upper() == "N"):
+                break
+        except:
+            print(">>> Invalid input")
+    if(choice.upper() == "Y"):
+        print(">>> Begin training <<<")
+        print(f">>> Batch size: {engine.batch_size}")
+        for i in range(engine.epochs):
+            print(f"Epoch {i+1}")
+            engine.batchTrain()
         
-main_config = start_program()
+main_config, flag = start_program()
 data_train, data_train_class = loadPickle()
-main_engine = initiateEngine(main_config, data_train, data_train_class)
-main_engine.train_backprop()
+if(flag):
+    main_engine = main_config
+else:
+    main_engine = initiateEngine(main_config, data_train, data_train_class)
+train(main_engine)

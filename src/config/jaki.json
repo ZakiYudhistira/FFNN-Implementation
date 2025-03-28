@@ -15,7 +15,7 @@
         "sigmoid",
         "sigmoid"
     ],
-    "output_activation": "sigmoid",
+    "output_activation": "linear",
     "bias": 1.0,
     "init_type": [
         null,
