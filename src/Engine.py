@@ -1,12 +1,20 @@
 import numpy as np
 import random as rd
 import pickle
+import LossFunction as lf
 
 class Layer:
-    def __init__(self, neurons, prev_neurons, activation_function, bias, init_type="random-uniform"):
+    def __init__(self,
+                 neurons,
+                 prev_neurons,
+                 activation_function,
+                 activation_function_derivative,
+                 bias,
+                 init_type="random-uniform"):
         self.n_neurons = neurons
         self.prev_n_nodes = prev_neurons+1
         self.activation_function = activation_function
+        self.activation_function_derivative = activation_function_derivative
         param1, param2, init_type = init_type
 
         if init_type=="random-uniform":
@@ -23,18 +31,14 @@ class Layer:
             raise ValueError("Invalid intiation type")
         
         self.weight_matrix[-1, :] = bias
+        self.weight_matrix.astype(np.float64)
 
-        # self.input = None
-        # self.z = None
         self.output = None
         self.delta = None
 
     def multiply(self, input_array):
-        print("input array boi")
-        print(len(input_array))
-        print("weight")
-        print(len(self.weight_matrix))
         ret = np.matmul(input_array, self.weight_matrix)
+        ret = ret.astype(np.float64)
         self.output = self.activation_function(ret)
         return self.output
     
@@ -66,29 +70,51 @@ class Layer:
         self.weight_matrix = np.random.normal(0, variance, (self.prev_n_nodes, self.n_neurons))
 
 class NeuralNetwork:
-    def __init__(self, n_input, n_output, n_hiddenlayer, hidden_layers_size, hidden_layers_function, output_layer_function, bias, init_type):
+    def __init__(self,
+                 n_input,
+                 n_output,
+                 n_hiddenlayer,
+                 hidden_layers_size,
+                 hidden_layers_function,
+                 hidden_layers_function_derivative,
+                 output_layer_function,
+                 output_layer_function_derivative,
+                 bias,
+                 init_type,
+                 error_function,
+                 error_function_derivative):
         self.n_input = n_input
         self.n_output = n_output
         self.n_hiddenlayer = n_hiddenlayer
         self.hidden_layers_size = hidden_layers_size
         self.hidden_layers_function = hidden_layers_function
+        self.hidden_layers_function_derivative = hidden_layers_function_derivative
         self.output_layer_function = output_layer_function
+        self.output_layer_function_derivative = output_layer_function_derivative
         self.init_type = init_type
+        self.error_function = error_function
+        self.error_function_derivative = error_function_derivative
         
         self.initiateLayers(bias)
         
     def initiateLayers(self, bias):
         self.layers = []
-        self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], bias, self.init_type))
+        self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], self.hidden_layers_function_derivative[0], bias, self.init_type))
         for i in range(1, self.n_hiddenlayer):
-            self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], bias, self.init_type))
-        self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, bias, self.init_type))
+            self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], self.hidden_layers_function_derivative[i], bias, self.init_type))
+        self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, self.output_layer_function_derivative, bias, self.init_type))
     
     def forward(self, input_array):
         for layer in self.layers:
             input_array = np.append(input_array, 1)
             input_array = layer.multiply(input_array)
         return input_array
+    
+    def forwardBatch(self, input_matrix):
+        for layer in self.layers:
+            input_matrix = np.append(input_matrix, np.ones((input_matrix.shape[0], 1)), axis=1)
+            input_matrix = layer.multiply(input_matrix)
+        return input_matrix
     
     def backward(self, expected_output, learning_rate):
         """ Backpropagation algorithm """
@@ -105,12 +131,11 @@ class NeuralNetwork:
             error_term = np.dot(next_layer.weight_matrix[:-1], next_layer.delta)
             layer.delta = error_term * self.hidden_layers_function[i](layer.z, derivative=True)
 
-        # Update weights
+        # Update weightswadwd
         for layer in self.layers:
             layer.update_weights(learning_rate)
 
     def train(self, inputs, expected_outputs, epochs, learning_rate):
-        """ Train the neural network using backpropagation """
         for epoch in range(epochs):
             for i in range(len(inputs)):
                 self.forward(inputs[i])
@@ -119,41 +144,67 @@ class NeuralNetwork:
             if epoch % 1 == 0:
                 loss = np.mean((expected_outputs - self.forward(inputs)) ** 2)
                 print(f"Epoch {epoch}, Loss: {loss:.5f}")
+    
+    def trainBatch(self, inputs, expected_outputs, epochs, learning_rate):
+        counter = 0
+        while(True):
+            res = self.forwardBatch(inputs)
+            print(res)
                 
 class Engine():
     def __init__(self,
                  n_hiddenlayer,
                  hidden_layers_size,
                  hidden_layers_function,
+                 hidden_layers_function_derivative,
                  output_layer_function,
+                 output_layer_function_derivative,
                  bias,
                  init_type,
                  data_train,
                  data_train_class,
-                 learning_rate):
+                 learning_rate,
+                 epochs,
+                 batch_size,
+                 error_function,
+                 error_function_derivative):
         self.data_train = data_train
         self.data_train_class = data_train_class
         self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.error_function = error_function
+        self.error_function_derivative = error_function_derivative
 
         self.neural = NeuralNetwork(n_input=data_train.shape[1],
-                                    n_output=np.unique(data_train_class).shape[0],
+                                    n_output=data_train_class.shape[1],
                                     n_hiddenlayer=n_hiddenlayer,
                                     hidden_layers_size=hidden_layers_size,
                                     hidden_layers_function=hidden_layers_function,
+                                    hidden_layers_function_derivative=hidden_layers_function_derivative,
                                     output_layer_function=output_layer_function,
+                                    output_layer_function_derivative=output_layer_function_derivative,
                                     bias=bias,
-                                    init_type=init_type)
+                                    init_type=init_type,
+                                    error_function=error_function,
+                                    error_function_derivative=error_function_derivative)
     
-    def batch_train(self):
-        np.set_printoptions(precision=3, suppress=True)
+    def batchTrain(self):
+        counter = 0
+        while(counter <= self.data_train.shape[0]):
+            upper_index = min(counter+self.batch_size, self.data_train.shape[0])
+            batch_process = self.data_train[counter:upper_index]
+            expected_result = self.data_train_class[counter:upper_index]
+            counter += self.batch_size
 
-        for i in range(10):
-            output = self.neural.forward(self.data_train[i, :])
-            print(output)
+            result = self.neural.forwardBatch(batch_process)
+
+            error = self.error_function(expected_result, result)
+            print(f"Error: {error}")
+            break
             
     def train_backprop(self) :
         for i in range(10):
-            print("LEN")
             print((self.data_train[i, :]))
             self.neural.train(self.data_train[i, :], self.data_train_class[i], 1, 0.1)
     
@@ -164,24 +215,3 @@ class Engine():
     def loadANNfromPickle(name):
         with open(f"./NeuralNetworks/{name}.pkl", "rb") as f:
             return pickle.load(f)
-
-# array_input = np.array([2,2,3,4,5,-1])
-# outputs = 7
-# hidden_layers = 5
-# hidden_sizes = [4, 3, 1, 6, 4]
-# bias=5
-# init_type="he"
-
-# function = lambda x:x
-# hidden_function = [function, function, function, function, function]
-
-# neural = NeuralNetwork(n_input=len(array_input),
-#                        n_output=outputs,
-#                        n_hiddenlayer=hidden_layers,
-#                        hidden_layers_size=hidden_sizes,
-#                        hidden_layers_function=hidden_function,
-#                        output_layer_function=function,
-#                        bias=bias,
-#                        init_type=init_type)
-
-# print(neural.forward(array_input))

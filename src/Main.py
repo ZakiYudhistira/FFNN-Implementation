@@ -13,6 +13,29 @@ activation_functions_dict = {
     "softmax": lambda x: np.exp(x - np.max(x)) / np.sum(np.exp(x - np.max(x)), axis=-1, keepdims=True)
 }
 
+activation_functions_dict_derivative = {
+    "relu": lambda x: np.where(x > 0, 1, 0),
+    "sigmoid": lambda x: (lambda s: s * (1 - s))(1 / (1 + np.exp(-x))),
+    "tanh": lambda x: 1 - np.tanh(x) ** 2,
+    "linear": lambda x: np.ones_like(x),
+    "softmax": lambda x: (lambda s: np.einsum('ij,ik->ijk', s, np.eye(s.shape[1])) - np.einsum('ij,ik->ijk', s, s))(
+        np.exp(x - np.max(x, axis=-1, keepdims=True)) /
+        np.sum(np.exp(x - np.max(x, axis=-1, keepdims=True)), axis=-1, keepdims=True)
+    )
+}
+
+loss_functions_dict = {
+    "mean_squared_error": lambda y_true, y_pred: np.mean((y_true - y_pred) ** 2),
+    "binary_cross_entropy": lambda y_true, y_pred: -np.mean(y_true * np.log(y_pred + 1e-10) + (1 - y_true) * np.log(1 - y_pred + 1e-10)),
+    "categorical_cross_entropy": lambda y_true, y_pred: -np.mean(np.sum(y_true * np.log(y_pred + 1e-10), axis=1))
+}
+
+loss_functions_dict_derivative = {
+    "mean_squared_error": lambda y_true, y_pred: 2 * (y_pred - y_true) / y_true.shape[0],
+    "binary_cross_entropy": lambda y_true, y_pred: (y_pred - y_true) / (y_pred * (1 - y_pred) + 1e-10),
+    "categorical_cross_entropy": lambda y_true, y_pred: -y_true / (y_pred + 1e-10) 
+}
+
 def savePickle():
     loader = DataLoader.DataLoader('./data/mnist_784.arff')
     data_train, data_train_class = loader.load_data()
@@ -87,10 +110,17 @@ def start_program():
                             init_type=init_type_information,
                             data_train=None,
                             data_train_class=None)
+        
+        save_flag = input(">>> Do you want to save this configuration? (Y/N): ")
+
+        if(save_flag.upper() == "Y"):
+            Configuration.saveConfigtoJSON(config, f"./config/{config_name}.json")
     elif(choice == 1):
         name_path = input(">>> Input your Artificial Neural Network Configuration file: ")
+        main_engine = Engine.Engine.loadANNfromPickle(name_path)
+        return main_engine, True
 
-    
+
     print(">>> Configuration <<<")
     print("Using configuration:", config.config_name)
     print("Batch size:", config.batch_size)
@@ -104,26 +134,54 @@ def start_program():
     print("Bias:", config.bias)
     print("Init type:", config.init_type)
 
-    save_flag = input(">>> Do you want to save this configuration? (Y/N): ")
-
-    if(save_flag.upper() == "Y"):
-        Configuration.saveConfigtoJSON(config, f"./config/{config_name}.json")
-
-    return config
+    return config, False
 
 def initiateEngine(config: Configuration, data_train, data_train_class):
+    hidden_layer_activations = [activation_functions_dict[func] for func in config.hidden_layer_activations]
+    hidden_layer_activations_derivative = [activation_functions_dict_derivative[func] for func in config.hidden_layer_activations]
+
     main_engine = Engine.Engine(config.hidden_layer_count,
                          config.hidden_layer_sizes,
-                         config.hidden_layer_activations,
-                         config.output_activation,
+                         hidden_layer_activations,
+                         hidden_layer_activations_derivative,
+                         activation_functions_dict[config.output_activation],
+                         activation_functions_dict_derivative[config.output_activation],
                          config.bias,
                          config.init_type,
                          data_train,
                          data_train_class,
-                         config.learning_rate)
+                         config.learning_rate,
+                         config.epochs,
+                         config.batch_size,
+                         loss_functions_dict[config.loss_function],
+                         loss_functions_dict_derivative[config.loss_function])
     return main_engine
+
+def train(engine):
+    print(">>> Training <<<")
+    print("Do you want to train the ANN? (Y/N): ", end="")
+    while True:
+        try:
+            choice = input()
+            if (choice.upper() == "Y" or choice.upper() == "N"):
+                break
+        except:
+            print(">>> Invalid input")
+    if(choice.upper() == "Y"):
+        print(">>> Begin training <<<")
+        print(f">>> Batch size: {engine.batch_size}")
+        for i in range(engine.epochs):
+            print(f"Epoch {i+1}")
+            engine.batchTrain()
         
-main_config = start_program()
+main_config, flag = start_program()
+
 data_train, data_train_class = loadPickle()
-main_engine = initiateEngine(main_config, data_train, data_train_class)
-main_engine.train_backprop()
+data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
+print(data_train_class.shape)
+
+if(flag):
+    main_engine = main_config
+else:
+    main_engine = initiateEngine(main_config, data_train, data_train_class)
+train(main_engine)

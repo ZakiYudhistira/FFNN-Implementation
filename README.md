@@ -3,7 +3,9 @@ This is the repository for IF3270 1st assignment, implementing an FFNN from scra
 
 ## How to configure
 
+
 ## How to run
+
 
 | No  | NIM      | Tugas                                                  |
 | --- | -------- | ------------------------------------------------------ |
