@@ -1,20 +1,92 @@
 import numpy as np
-
-# Dictionary of Activation Functions
-activation_functions = {
-    "relu": lambda x: np.maximum(0, x),
-    "sigmoid": lambda x: 1 / (1 + np.exp(-x)),
-    "tanh": np.tanh,
-    "linear": lambda x: x,
-    "softmax": lambda x: np.exp(x - np.max(x)) / np.sum(np.exp(x - np.max(x)), axis=-1, keepdims=True)
-}
+import json
 
 class Configuration:
-    def __init__(self, batch_size:int, learning_rate:float, epochs:int, loss_function:str):
+    def __init__(self,
+                 config_name:str,
+                 batch_size:int,
+                 learning_rate:float,
+                 epochs:int,
+                 loss_function:str,
+                 hidden_layer_count:int,
+                 hidden_layer_sizes:list[int],
+                 hidden_layer_activations:list[str],
+                 output_activation:str,
+                 bias:float,
+                 init_type:tuple,
+                 data_train:np.ndarray,
+                 data_train_class:np.ndarray):
+        self.config_name = config_name
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.epochs = epochs 
         self.loss_function = loss_function
+        self.hidden_layer_count = hidden_layer_count
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.hidden_layer_activations = hidden_layer_activations
+        self.output_activation = output_activation
+        self.bias = bias
+        self.init_type = init_type
+        self.data_train = data_train
+        self.data_train_class = data_train_class
+        
+    def to_dict(self):
+        return {
+            "config_name": self.config_name,
+            "batch_size": self.batch_size,
+            "learning_rate": self.learning_rate,
+            "epochs": self.epochs,
+            "loss_function": self.loss_function,
+            "hidden_layer_count": self.hidden_layer_count,
+            "hidden_layer_sizes": self.hidden_layer_sizes,
+            "hidden_layer_activations": [func for func in self.hidden_layer_activations],
+            "output_activation": self.output_activation,
+            "bias": self.bias,
+            "init_type": self.init_type,
+            "data_train": self.data_train.tolist() if isinstance(self.data_train, np.ndarray) else self.data_train,
+            "data_train_class": self.data_train_class.tolist() if isinstance(self.data_train_class, np.ndarray) else self.data_train_class
+        }
+    
+    def saveConfigtoJSON(config, filepath):
+        config_dict = config.to_dict()
+
+        with open(filepath, "w") as f:
+            json.dump(config_dict, f, indent=4)
+
+        print(f"Configuration saved to {filepath}")
+    
+    def loadConfigfromJSON(filepath):
+        with open(filepath, "r") as f:
+            config_dict = json.load(f)
+            return Configuration(config_name=config_dict["config_name"],
+                             batch_size=config_dict["batch_size"],
+                             learning_rate=config_dict["learning_rate"],
+                             epochs=config_dict["epochs"],
+                             loss_function=config_dict["loss_function"],
+                             hidden_layer_count=config_dict["hidden_layer_count"],
+                             hidden_layer_sizes=config_dict["hidden_layer_sizes"],
+                             hidden_layer_activations=config_dict["hidden_layer_activations"],
+                             output_activation=config_dict["output_activation"],
+                             bias=config_dict["bias"],
+                             init_type=config_dict["init_type"],
+                             data_train=None,
+                             data_train_class=None) 
+
+
+        
+        return Configuration(config_name=config_dict["config_name"],
+                             batch_size=config_dict["batch_size"],
+                             learning_rate=config_dict["learning_rate"],
+                             epochs=config_dict["epochs"],
+                             loss_function=config_dict["loss_function"],
+                             hidden_layer_count=config_dict["hidden_layer_count"],
+                             hidden_layer_sizes=config_dict["hidden_layer_sizes"],
+                             hidden_layer_activations=config_dict["hidden_layer_activations"],
+                             output_activation=config_dict["output_activation"],
+                             bias=config_dict["bias"],
+                             init_type=config_dict["init_type"],
+                             data_train=np.array(config_dict["data_train"]),
+                             data_train_class=np.array(config_dict["data_train_class"]))
 
 class Neuron:
     def __init__(self, value=0):
@@ -24,26 +96,3 @@ class Weight:
     def __init__(self, weight_type: str, parameter: list[float, float, float]):
         self.type = weight_type
         self.parameter = parameter
-
-class Layer:
-    def __init__(self, num_neurons: int, weight_type: str, weight_param: list[float, float, float], activation_name: str):
-        self.neurons = [Neuron() for _ in range(num_neurons)]
-        self.weight = Weight(weight_type, weight_param)
-        
-        # Assign activation function dynamically
-        self.activation = activation_functions.get(activation_name, None)
-        
-        if self.activation is None:
-            raise ValueError(f"Activation function '{activation_name}' is not defined.")
-
-    def apply_activation(self, inputs):
-        """Applies the selected activation function to the inputs."""
-        return self.activation(inputs)
-
-# Example Usage
-# layer = Layer(num_neurons=4, weight_type="uniform", weight_param=(0, 1, 2), activation_name="relu")
-# inputs = np.array([-2, 0, 3])
-# output = layer.apply_activation(inputs)
-
-# print(f"Layer Activation Output: {output}")  # Expected: [0, 0, 3] for ReLU
-
