@@ -1,0 +1,27 @@
+{
+    "config_name": "edbert",
+    "batch_size": 5,
+    "learning_rate": 0.01,
+    "epochs": 15,
+    "loss_function": "mse",
+    "hidden_layer_count": 3,
+    "hidden_layer_sizes": [
+        5,
+        5,
+        5
+    ],
+    "hidden_layer_activations": [
+        "sigmoid",
+        "sigmoid",
+        "sigmoid"
+    ],
+    "output_activation": "sigmoid",
+    "bias": 1.0,
+    "init_type": [
+        -1.0,
+        3.0,
+        "random-uniform"
+    ],
+    "data_train": null,
+    "data_train_class": null
+}

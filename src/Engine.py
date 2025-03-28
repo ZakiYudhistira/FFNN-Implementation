@@ -1,16 +1,18 @@
 import numpy as np
 import random as rd
+import pickle
 
 class Layer:
     def __init__(self, neurons, prev_neurons, activation_function, bias, init_type="random-uniform"):
         self.n_neurons = neurons
         self.prev_n_nodes = prev_neurons+1
         self.activation_function = activation_function
+        param1, param2, init_type = init_type
 
         if init_type=="random-uniform":
-            self.initiateWeightRDUniform()
+            self.initiateWeightRDUniform(lower_bound=param1, upper_bound=param2)
         elif init_type=="random-normal":
-            self.initiateWeightRDNormal()
+            self.initiateWeightRDNormal(mean=param1, variance=param2)
         elif init_type=="xavier":
             self.initiateWeightXavier()
         elif init_type=="he":
@@ -154,6 +156,14 @@ class Engine():
             print("LEN")
             print((self.data_train[i, :]))
             self.neural.train(self.data_train[i, :], self.data_train_class[i], 1, 0.1)
+    
+    def saveANNasPickle(self, name):
+        with open(f"./NeuralNetworks/{name}.pkl", "wb") as f:
+            pickle.dump(self, f)
+    
+    def loadANNfromPickle(name):
+        with open(f"./NeuralNetworks/{name}.pkl", "rb") as f:
+            return pickle.load(f)
 
 # array_input = np.array([2,2,3,4,5,-1])
 # outputs = 7

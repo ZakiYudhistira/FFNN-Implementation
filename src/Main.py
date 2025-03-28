@@ -5,6 +5,14 @@ import Misc as ms
 from Classes import Configuration
 import numpy as np
 
+activation_functions_dict = {
+    "relu": lambda x: np.maximum(0, x),
+    "sigmoid": lambda x: 1 / (1 + np.exp(-x)),
+    "tanh": np.tanh,
+    "linear": lambda x: x,
+    "softmax": lambda x: np.exp(x - np.max(x)) / np.sum(np.exp(x - np.max(x)), axis=-1, keepdims=True)
+}
+
 def savePickle():
     loader = DataLoader.DataLoader('./data/mnist_784.arff')
     data_train, data_train_class = loader.load_data()
@@ -29,21 +37,22 @@ def loadPickle():
 
 def start_program():
     print(">>> Welcome to Neural Network <<<")
-    print(">>> Do you want to load your custom configuration?")
-    print(">>> 1. Yes")
-    print(">>> 2. No")
+    print(">>> Please choose an action")
+    print(">>> 1. Load a Neural Network Configuration")
+    print(">>> 2. Load a Neural Network Spesification JSON")
+    print(">>> 3. Create a new Neural Network Configuration")
     print(">>> Choose: ", end="")
     while True:
         try:
             choice = int(input())
-            if (choice == 1 or choice == 2):
+            if (choice == 1 or choice == 2 or choice == 3):
                 break
         except:
             print(">>> Invalid input")
-    if(choice == 1):
+    if(choice == 2):
         file_name = input(">>> Input your configuration file: ")
         config = Configuration.loadConfigfromJSON(f"./config/{file_name}")
-    else:
+    elif(choice == 3):
         print(">>> Using custom configuration")
         config_name = input(">>> Enter config name: ")
         batch_size = ms.getPositiveInteger(">>> Input batch size: ")
@@ -78,19 +87,22 @@ def start_program():
                             init_type=init_type_information,
                             data_train=None,
                             data_train_class=None)
+    elif(choice == 1):
+        name_path = input(">>> Input your Artificial Neural Network Configuration file: ")
+
     
     print(">>> Configuration <<<")
     print("Using configuration:", config.config_name)
-    print("Batch size: ", config.batch_size)
-    print("Learning rate: ", config.learning_rate)
-    print("Epochs: ", config.epochs)
-    print("Loss function: ", config.loss_function)
-    print("Hidden layer count: ", config.hidden_layer_count)
-    print("Hidden layer sizes: ", config.hidden_layer_sizes)
-    print("Hidden layer activations: ", config.hidden_layer_activations)
-    print("Output activation: ", config.output_activation)
-    print("Bias: ", config.bias)
-    print("Init type: ", config.init_type)
+    print("Batch size:", config.batch_size)
+    print("Learning rate:", config.learning_rate)
+    print("Epochs:", config.epochs)
+    print("Loss function:", config.loss_function)
+    print("Hidden layer sizes:", config.hidden_layer_sizes)
+    print("Hidden layer count:", config.hidden_layer_count)
+    print("Hidden layer activations:", config.hidden_layer_activations)
+    print("Output activation:", config.output_activation)
+    print("Bias:", config.bias)
+    print("Init type:", config.init_type)
 
     save_flag = input(">>> Do you want to save this configuration? (Y/N): ")
 
@@ -98,29 +110,20 @@ def start_program():
         Configuration.saveConfigtoJSON(config, f"./config/{config_name}.json")
 
     return config
+
+def initiateEngine(config: Configuration, data_train, data_train_class):
+    main_engine = Engine.Engine(config.hidden_layer_count,
+                         config.hidden_layer_sizes,
+                         config.hidden_layer_activations,
+                         config.output_activation,
+                         config.bias,
+                         config.init_type,
+                         data_train,
+                         data_train_class,
+                         config.learning_rate)
+    return main_engine
         
-start_program()
-
+main_config = start_program()
 data_train, data_train_class = loadPickle()
-
-array_input = np.array([2,2,3,4,5,-1])
-outputs = 7
-hidden_layers = 5
-hidden_sizes = [4, 3, 1, 6, 4]
-bias=5
-init_type="he"
-
-function = lambda x:x
-hidden_function = [function, function, function, function, function]
-
-engine = Engine.Engine(n_hiddenlayer=hidden_layers,
-                       hidden_layers_size=hidden_sizes,
-                       hidden_layers_function=hidden_function,
-                       output_layer_function=function,
-                       bias=bias,
-                       init_type=init_type,
-                       data_train=data_train,
-                       data_train_class=data_train_class,
-                       learning_rate=0.01)
-# engine.batch_train()
-engine.train_backprop()
+main_engine = initiateEngine(main_config, data_train, data_train_class)
+main_engine.train_backprop()
