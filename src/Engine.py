@@ -177,7 +177,7 @@ class Engine():
         self.error_function_derivative = error_function_derivative
 
         self.neural = NeuralNetwork(n_input=data_train.shape[1],
-                                    n_output=np.unique(data_train_class).shape[0],
+                                    n_output=data_train_class.shape[1],
                                     n_hiddenlayer=n_hiddenlayer,
                                     hidden_layers_size=hidden_layers_size,
                                     hidden_layers_function=hidden_layers_function,
@@ -199,13 +199,12 @@ class Engine():
 
             result = self.neural.forwardBatch(batch_process)
 
-            error = np.mean((expected_result - result) ** 2)
+            error = self.error_function(expected_result, result)
             print(f"Error: {error}")
             break
             
     def train_backprop(self) :
         for i in range(10):
-            print("LEN")
             print((self.data_train[i, :]))
             self.neural.train(self.data_train[i, :], self.data_train_class[i], 1, 0.1)
     

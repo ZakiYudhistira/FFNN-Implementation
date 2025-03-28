@@ -178,6 +178,7 @@ main_config, flag = start_program()
 
 data_train, data_train_class = loadPickle()
 data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
+print(data_train_class.shape)
 
 if(flag):
     main_engine = main_config
