@@ -1,7 +1,7 @@
 import numpy as np
 import random as rd
 import pickle
-import LossFunction as lf
+from typing import Callable, List, Tuple
 
 class Layer:
     def __init__(self,
@@ -153,41 +153,21 @@ class NeuralNetwork:
                 
 class Engine():
     def __init__(self,
-                 n_hiddenlayer,
-                 hidden_layers_size,
-                 hidden_layers_function,
-                 hidden_layers_function_derivative,
-                 output_layer_function,
-                 output_layer_function_derivative,
-                 bias,
-                 init_type,
                  data_train,
                  data_train_class,
-                 learning_rate,
-                 epochs,
-                 batch_size,
-                 error_function,
-                 error_function_derivative):
+                 learning_rate : float,
+                 epochs : int,
+                 batch_size : int,
+                 neural_network : NeuralNetwork,
+                 error_function: Callable[[np.ndarray, np.ndarray], float]):
         self.data_train = data_train
         self.data_train_class = data_train_class
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.batch_size = batch_size
         self.error_function = error_function
-        self.error_function_derivative = error_function_derivative
 
-        self.neural = NeuralNetwork(n_input=data_train.shape[1],
-                                    n_output=data_train_class.shape[1],
-                                    n_hiddenlayer=n_hiddenlayer,
-                                    hidden_layers_size=hidden_layers_size,
-                                    hidden_layers_function=hidden_layers_function,
-                                    hidden_layers_function_derivative=hidden_layers_function_derivative,
-                                    output_layer_function=output_layer_function,
-                                    output_layer_function_derivative=output_layer_function_derivative,
-                                    bias=bias,
-                                    init_type=init_type,
-                                    error_function=error_function,
-                                    error_function_derivative=error_function_derivative)
+        self.neural = neural_network
     
     def batchTrain(self):
         counter = 0
@@ -208,9 +188,9 @@ class Engine():
             print((self.data_train[i, :]))
             self.neural.train(self.data_train[i, :], self.data_train_class[i], 1, 0.1)
     
-    def saveANNasPickle(self, name):
+    def saveANNtoPickle(self, name):
         with open(f"./NeuralNetworks/{name}.pkl", "wb") as f:
-            pickle.dump(self, f)
+            pickle.dump(self.neural, f)
     
     def loadANNfromPickle(name):
         with open(f"./NeuralNetworks/{name}.pkl", "rb") as f:

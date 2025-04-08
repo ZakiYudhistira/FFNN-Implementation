@@ -140,21 +140,26 @@ def initiateEngine(config: Configuration, data_train, data_train_class):
     hidden_layer_activations = [activation_functions_dict[func] for func in config.hidden_layer_activations]
     hidden_layer_activations_derivative = [activation_functions_dict_derivative[func] for func in config.hidden_layer_activations]
 
-    main_engine = Engine.Engine(config.hidden_layer_count,
-                         config.hidden_layer_sizes,
-                         hidden_layer_activations,
-                         hidden_layer_activations_derivative,
-                         activation_functions_dict[config.output_activation],
-                         activation_functions_dict_derivative[config.output_activation],
-                         config.bias,
-                         config.init_type,
-                         data_train,
-                         data_train_class,
-                         config.learning_rate,
-                         config.epochs,
-                         config.batch_size,
-                         loss_functions_dict[config.loss_function],
-                         loss_functions_dict_derivative[config.loss_function])
+    neural = Engine.NeuralNetwork(n_input=data_train.shape[1],
+                                  n_output=data_train_class.shape[1],
+                                  n_hiddenlayer=config.hidden_layer_count,
+                                  hidden_layers_size=config.hidden_layer_sizes,
+                                  hidden_layers_function=hidden_layer_activations,
+                                  hidden_layers_function_derivative=hidden_layer_activations_derivative,
+                                  output_layer_function=activation_functions_dict[config.output_activation],
+                                  output_layer_function_derivative=activation_functions_dict_derivative[config.output_activation],
+                                  bias=config.bias,
+                                  init_type=config.init_type,
+                                  error_function=loss_functions_dict[config.loss_function],
+                                  error_function_derivative=loss_functions_dict_derivative[config.loss_function])
+
+    main_engine = Engine.Engine(data_train=data_train,
+                              data_train_class=data_train_class,
+                              learning_rate=config.learning_rate,
+                              epochs=config.epochs,
+                              batch_size=config.batch_size,
+                              neural_network=neural,
+                              error_function=loss_functions_dict[config.loss_function])
     return main_engine
 
 def train(engine):
@@ -173,6 +178,22 @@ def train(engine):
         for i in range(engine.epochs):
             print(f"Epoch {i+1}")
             engine.batchTrain()
+    else:
+        print(">>> Skip training <<<")
+        print(">>> Do you want to save the ANN? (Y/N): ", end="")
+        while True:
+            try:
+                choice = input()
+                if (choice.upper() == "Y" or choice.upper() == "N"):
+                    break
+            except:
+                print(">>> Invalid input")
+        if(choice.upper() == "Y"):
+            name = input(">>> Enter name for the ANN: ")
+            engine.saveANNtoPickle(name)
+            print(f">>> {name} ANN saved <<<")
+        else:
+            print(">>> ANN not saved <<<")
         
 main_config, flag = start_program()
 
