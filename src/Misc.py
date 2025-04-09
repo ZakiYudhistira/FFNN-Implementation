@@ -71,14 +71,16 @@ def getInitType():
         while(True):
             lower_bound = float(input(">>> Input lower bound: "))
             upper_bound = float(input(">>> Input upper bound: "))
+            seed = int(input(">>> Input seed: "))
             if(lower_bound > upper_bound):
                 print(">>> Lower bound must be less than upper bound")
             else:
                 break
-        return lower_bound, upper_bound, init_dict[init_type]
+        return lower_bound, upper_bound, init_dict[init_type], seed
     elif(init_type == "2"):
         mean = float(input(">>> Input mean: "))
         variance = float(input(">>> Input variance: "))
-        return mean, variance, init_dict[init_type]
+        seed = int(input(">>> Input seed: "))
+        return mean, variance, init_dict[init_type], seed
     elif(init_type == "3" or init_type == "4" or init_type == "5"):
-        return None, None, init_dict[init_type]
+        return None, None, init_dict[init_type], 0

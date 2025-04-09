@@ -1,6 +1,8 @@
+from __future__ import annotations
 import numpy as np
 import random as rd
 import pickle
+from FuncDictionaries import activation_functions_dict, activation_functions_dict_derivative, loss_functions_dict, loss_functions_dict_derivative
 from typing import Callable, List, Tuple
 
 class Layer:
@@ -71,32 +73,66 @@ class Layer:
 
 class NeuralNetwork:
     def __init__(self,
-                 n_input,
-                 n_output,
-                 n_hiddenlayer,
-                 hidden_layers_size,
-                 hidden_layers_function,
-                 hidden_layers_function_derivative,
-                 output_layer_function,
-                 output_layer_function_derivative,
-                 bias,
-                 init_type,
-                 error_function,
-                 error_function_derivative):
-        self.n_input = n_input
-        self.n_output = n_output
-        self.n_hiddenlayer = n_hiddenlayer
-        self.hidden_layers_size = hidden_layers_size
-        self.hidden_layers_function = hidden_layers_function
-        self.hidden_layers_function_derivative = hidden_layers_function_derivative
-        self.output_layer_function = output_layer_function
-        self.output_layer_function_derivative = output_layer_function_derivative
-        self.init_type = init_type
-        self.error_function = error_function
-        self.error_function_derivative = error_function_derivative
-        
-        self.initiateLayers(bias)
-        
+                 n_input: int = None,
+                 n_output: int = None,
+                 n_hiddenlayer: int = None,
+                 hidden_layers_size: int = None,
+                 hidden_layers_function = None,
+                 hidden_layers_function_derivative = None,
+                 output_layer_function = None,
+                 output_layer_function_derivative = None,
+                 bias: float = None,
+                 init_type: tuple = None,
+                 error_function = None,
+                 error_function_derivative = None,
+                 hidden_layers_function_strings: list[str] = None,
+                 output_layer_function_string: list[str] = None,
+                 error_function_string: list[str] = None,
+                 neural_save: NeuralNetworkSave = None):
+        if neural_save is None:
+            self.n_input = n_input
+            self.n_output = n_output
+            self.n_hiddenlayer = n_hiddenlayer
+            self.hidden_layers_size = hidden_layers_size
+            self.hidden_layers_function = hidden_layers_function
+            self.hidden_layers_function_derivative = hidden_layers_function_derivative
+            self.output_layer_function = output_layer_function
+            self.output_layer_function_derivative = output_layer_function_derivative
+            self.init_type = init_type
+            self.error_function = error_function
+            self.error_function_derivative = error_function_derivative
+            self.hidden_layers_function_strings = hidden_layers_function_strings
+            self.output_layer_function_string = output_layer_function_string
+            self.error_function_string = error_function_string
+            
+            self.initiateLayers(bias)
+        else:
+            self.n_input = neural_save.n_input
+            self.n_output = neural_save.n_output
+            self.n_hiddenlayer = neural_save.n_hiddenlayer
+            self.hidden_layers_size = neural_save.hidden_layers_size
+            self.init_type = neural_save.init_type
+            self.hidden_layers_function_strings = neural_save.hidden_layers_function_strings
+            self.output_layer_function_string = neural_save.output_layer_function_string
+            self.error_function_string = neural_save.error_function_string
+
+            self.hidden_layers_function = [activation_functions_dict[func] for func in neural_save.hidden_layers_function_strings]
+            self.hidden_layers_function_derivative = [activation_functions_dict_derivative[func] for func in neural_save.hidden_layers_function_strings]
+
+            self.output_layer_function = activation_functions_dict[neural_save.output_layer_function_string]
+            self.output_layer_function_derivative = activation_functions_dict_derivative[neural_save.output_layer_function_string]
+
+            self.error_function = loss_functions_dict[neural_save.error_function_string]
+            self.error_function_derivative = loss_functions_dict_derivative[neural_save.error_function_string]
+
+            self.layers = neural_save.layer
+            for i in range(len(self.hidden_layers_function_strings)):
+                self.layers[i].activation_function = self.hidden_layers_function[i]
+                self.layers[i].activation_function_derivative = self.hidden_layers_function_derivative[i]
+            
+            self.layers[-1].activation_function = self.output_layer_function
+            self.layers[-1].activation_function_derivative = self.output_layer_function_derivative
+
     def initiateLayers(self, bias):
         self.layers = []
         self.layers.append(Layer(self.hidden_layers_size[0], self.n_input, self.hidden_layers_function[0], self.hidden_layers_function_derivative[0], bias, self.init_type))
@@ -151,6 +187,23 @@ class NeuralNetwork:
             res = self.forwardBatch(inputs)
             print(res)
                 
+class NeuralNetworkSave:
+    def __init__(self, neural:NeuralNetwork):
+        self.n_input = neural.n_input
+        self.n_output = neural.n_output
+        self.n_hiddenlayer = neural.n_hiddenlayer
+        self.hidden_layers_size = neural.hidden_layers_size
+        self.init_type = neural.init_type
+        self.hidden_layers_function_strings = neural.hidden_layers_function_strings
+        self.output_layer_function_string = neural.output_layer_function_string
+        self.error_function_string = neural.error_function_string
+
+        self.layer = neural.layers
+
+        for layer in self.layer:
+            layer.activation_function = None
+            layer.activation_function_derivative = None
+
 class Engine():
     def __init__(self,
                  data_train,
@@ -189,9 +242,14 @@ class Engine():
             self.neural.train(self.data_train[i, :], self.data_train_class[i], 1, 0.1)
     
     def saveANNtoPickle(self, name):
+        neural_save = NeuralNetworkSave(self.neural)
         with open(f"./NeuralNetworks/{name}.pkl", "wb") as f:
-            pickle.dump(self.neural, f)
+            pickle.dump(neural_save, f)
     
     def loadANNfromPickle(name):
         with open(f"./NeuralNetworks/{name}.pkl", "rb") as f:
-            return pickle.load(f)
+            neural_save_config = pickle.load(f)
+            if neural_save_config == None:
+                print("gay")
+            neural = NeuralNetwork(neural_save=neural_save_config)
+            return neural
