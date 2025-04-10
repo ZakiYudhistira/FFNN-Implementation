@@ -249,7 +249,5 @@ class Engine():
     def loadANNfromPickle(name):
         with open(f"./NeuralNetworks/{name}.pkl", "rb") as f:
             neural_save_config = pickle.load(f)
-            if neural_save_config == None:
-                print("gay")
             neural = NeuralNetwork(neural_save=neural_save_config)
             return neural
