@@ -138,9 +138,9 @@ def initiateEngine(config: Configuration, data_train, data_train_class, neural: 
                                 neural_network=neural,
                                 error_function=loss_functions_dict[config.loss_function])
     else:
-        learning_rate = ms.getPositiveFLoat(">>> Input learning rate: ")
-        epochs = ms.getPositiveInteger(">>> Input epochs: ")
-        batch_size = ms.getPositiveInteger(">>> Input batch size: ")
+        learning_rate = 0.1 # ms.getPositiveFLoat(">>> Input learning rate: ")
+        epochs = 1 # ms.getPositiveInteger(">>> Input epochs: ")
+        batch_size = 5 # ms.getPositiveInteger(">>> Input batch size: ")
         main_engine = Engine.Engine(data_train=data_train,
                                 data_train_class=data_train_class,
                                 learning_rate=learning_rate,
@@ -182,17 +182,37 @@ def train(engine):
             print(f">>> {name} ANN saved <<<")
         else:
             print(">>> ANN not saved <<<")
+
+def visualize(engine):
+    print(">>> Visualizing <<<")
+    print("Do you want to visualize the ANN? (Y/N): ", end="")
+    while True:
+        try:
+            choice = input()
+            if (choice.upper() == "Y" or choice.upper() == "N"):
+                break
+        except:
+            print(">>> Invalid input")
+    if(choice.upper() == "Y"):
+        engine.visualizeNetwork("Jaki")
+    else:
+        print(">>> Skip visualization <<<")
         
-main_config, flag = start_program()
+# main_config, flag = start_program()
 
 data_train, data_train_class = loadPickle()
 data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
-print(data_train_class.shape)
+# print(data_train_class.shape)
 
-if(flag):
-    main_engine = main_config
-    main_engine.data_train = data_train
-    main_engine.data_train_class = data_train_class
-else:
-    main_engine = initiateEngine(main_config, data_train, data_train_class)
-train(main_engine)
+# if(flag):
+#     main_engine = main_config
+#     main_engine.data_train = data_train
+#     main_engine.data_train_class = data_train_class
+# else:
+#     main_engine = initiateEngine(main_config, data_train, data_train_class)
+# train(main_engine)
+# visualize(main_engine)
+
+neural = Engine.Engine.loadANNfromPickle("save1")
+main_engine = initiateEngine(config=None, data_train=None, data_train_class=None, neural=neural)
+main_engine.visualizeNetwork("Jaki")

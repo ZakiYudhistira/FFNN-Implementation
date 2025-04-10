@@ -4,6 +4,7 @@ import random as rd
 import pickle
 from FuncDictionaries import activation_functions_dict, activation_functions_dict_derivative, loss_functions_dict, loss_functions_dict_derivative
 from typing import Callable, List, Tuple
+from graphviz import Digraph
 
 class Layer:
     def __init__(self,
@@ -141,8 +142,9 @@ class NeuralNetwork:
         self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, self.output_layer_function_derivative, bias, self.init_type))
     
     def forward(self, input_array):
+        self.input_array = input_array # Store input for backpropagation
         for layer in self.layers:
-            input_array = np.append(input_array, 1)
+            input_array = np.append(input_array, 1) # Add bias term
             input_array = layer.multiply(input_array)
         return input_array
     
@@ -153,39 +155,139 @@ class NeuralNetwork:
         return input_matrix
     
     def backward(self, expected_output, learning_rate):
-        """ Backpropagation algorithm """
-        # Compute error at output layer
         last_layer = self.layers[-1]
-        last_layer.delta = (last_layer.output - expected_output) * self.output_layer_function(last_layer.z, derivative=True)
+        last_layer.delta = (last_layer.output - expected_output) * self.output_layer_function_derivative(last_layer.output)
 
-        # Propagate error backwards
         for i in reversed(range(len(self.layers) - 1)):
             layer = self.layers[i]
             next_layer = self.layers[i + 1]
 
-            # Compute delta for hidden layers
-            error_term = np.dot(next_layer.weight_matrix[:-1], next_layer.delta)
-            layer.delta = error_term * self.hidden_layers_function[i](layer.z, derivative=True)
+            error_term = np.dot(next_layer.weight_matrix[:-1, :], next_layer.delta)
+            layer.delta = error_term * layer.activation_function_derivative(layer.output)
 
-        # Update weightswadwd
-        for layer in self.layers:
-            layer.update_weights(learning_rate)
+        for i, layer in enumerate(self.layers):
+            input_array = np.append(self.layers[i - 1].output, 1) if i > 0 else np.append(self.input_array, 1)
+            layer.update_weights(input_array, learning_rate)
 
     def train(self, inputs, expected_outputs, epochs, learning_rate):
         for epoch in range(epochs):
+            total_loss = 0
             for i in range(len(inputs)):
-                self.forward(inputs[i])
+                output = self.forward(inputs[i])
                 self.backward(expected_outputs[i], learning_rate)
+                total_loss += np.mean((expected_outputs[i] - output) ** 2)
 
-            if epoch % 1 == 0:
-                loss = np.mean((expected_outputs - self.forward(inputs)) ** 2)
-                print(f"Epoch {epoch}, Loss: {loss:.5f}")
+            avg_loss = total_loss / len(inputs)
+            print(f"Epoch {epoch + 1}, Loss: {avg_loss:.5f}")
+            loss = np.mean((expected_outputs - self.forward(inputs)) ** 2)
+            print(f"Epoch {epoch}, Loss: {loss:.5f}")
     
     def trainBatch(self, inputs, expected_outputs, epochs, learning_rate):
         counter = 0
         while(True):
-            res = self.forwardBatch(inputs)
+            res = self.neural.forwardBatch(inputs)
+            self.neural.backward(expected_outputs, learning_rate)
             print(res)
+    
+    def visualizeNetwork(self, filename='neural_network'):
+        self.printSpec()
+        """
+        Creates a visual representation of the neural network using graphviz.
+        Each neuron shows its delta value and activation function,
+        and edges show weights.
+        """
+        dot = Digraph(comment='Neural Network Visualization')
+        dot.attr(rankdir='LR')
+        dot.attr('graph', nodesep='1.5') 
+        dot.attr('graph', ranksep='10')
+        dot.attr('graph', ordering='in')
+        
+        # input layers
+        with dot.subgraph(name='cluster_0') as c:
+            c.attr(label='Input Layer')
+            c.attr(rank='same') 
+            for i in range(self.n_input):
+                c.node(f'i{i}', f'Input {i}')
+            c.node(f'i{self.n_input}', 'Bias')
+
+            # for i in range(self.n_input):
+            #     if i < self.n_input - 1:
+            #         c.edge(f'i{i}', f'i{i+1}', style='invis')
+        
+        # hidden layers
+        for layer_idx, layer in enumerate(self.layers[:-1], 1):
+            with dot.subgraph(name=f'cluster_{layer_idx}') as c:
+                c.attr(label=f'Hidden Layer {layer_idx}')
+                c.attr(rank='same')  # Force same rank
+                for neuron_idx in range(layer.n_neurons):
+                    layer.delta = np.random.rand(layer.n_neurons) if layer.delta is None else layer.delta
+                    delta_val = f'\nδ={layer.delta[neuron_idx]:.4f}' if layer.delta is not None else ''
+                    func_name = self.hidden_layers_function_strings[layer_idx-1]
+                    c.node(f'h{layer_idx}_{neuron_idx}', 
+                        f'Neuron {neuron_idx}\n{func_name}{delta_val}')
+                c.node(f'h{layer_idx}_bias', 'Bias')
+
+                # for i in range(layer.n_neurons):
+                #     if i < layer.n_neurons - 1:
+                #         c.edge(f'h{layer_idx}_{i}', f'h{layer_idx}_{i+1}', style='invis')
+                # c.edge(f'h{layer_idx}_{layer.n_neurons-1}', f'h{layer_idx}_bias', style='invis')
+        
+        # output layer
+        with dot.subgraph(name=f'cluster_{len(self.layers)}') as c:
+            c.attr(label='Output Layer')
+            c.attr(rank='same')  # Force same rank
+            output_layer = self.layers[-1]
+            for neuron_idx in range(output_layer.n_neurons):
+                delta_val = f'\nδ={output_layer.delta[neuron_idx]:.4f}' if output_layer.delta is not None else ''
+                func_name = self.output_layer_function_string
+                c.node(f'o{neuron_idx}', 
+                    f'Output {neuron_idx}\n{func_name}{delta_val}')
+
+            # for i in range(output_layer.n_neurons - 1):
+            #     c.edge(f'o{i}', f'o{i+1}', style='invis')
+        
+        # Add edges with weights
+        # Connect input to first hidden layer
+        for i in range(self.n_input + 1):
+            for j in range(self.layers[0].n_neurons):
+                weight = self.layers[0].weight_matrix[i, j]
+                dot.edge(f'i{i}', f'h1_{j}', f'{weight:.2f}')
+        
+        # hidden layers weight
+        for layer_idx in range(1, len(self.layers)-1):
+            prev_layer = self.layers[layer_idx-1]
+            curr_layer = self.layers[layer_idx]
+            for i in range(prev_layer.n_neurons + 1):
+                node_id = f'h{layer_idx}_{i}'
+                if i == prev_layer.n_neurons:
+                    node_id = f'h{layer_idx}_bias'
+                for j in range(curr_layer.n_neurons):
+                    weight = curr_layer.weight_matrix[i, j]
+                    dot.edge(node_id, f'h{layer_idx+1}_{j}', f'{weight:.2f}')
+        
+        # output layers weight
+        last_hidden_idx = len(self.layers) - 1
+        last_hidden = self.layers[-2]
+        output_layer = self.layers[-1]
+        for i in range(last_hidden.n_neurons + 1):
+            node_id = f'h{last_hidden_idx}_{i}'
+            if i == last_hidden.n_neurons:
+                node_id = f'h{last_hidden_idx}_bias'
+            for j in range(output_layer.n_neurons):
+                weight = output_layer.weight_matrix[i, j]
+                dot.edge(node_id, f'o{j}', f'{weight:.2f}')
+        
+        # Saving
+        dot.render(filename, view=True, format='svg')
+
+    def printSpec(self):
+        print(f"Input: {self.n_input}")
+        print(f"Output: {self.n_output}")
+        print(f"Hidden Layer Count: {self.n_hiddenlayer}")
+        print(f"Hidden Layer Sizes: {self.hidden_layers_size}")
+        print(f"Hidden Layer Functions: {self.hidden_layers_function_strings}")
+        print(f"Output Layer Function: {self.output_layer_function_string}")
+        print(f"Error Function: {self.error_function_string}")
                 
 class NeuralNetworkSave:
     def __init__(self, neural:NeuralNetwork):
@@ -251,3 +353,6 @@ class Engine():
             neural_save_config = pickle.load(f)
             neural = NeuralNetwork(neural_save=neural_save_config)
             return neural
+    
+    def visualizeNetwork(self, filename='neural_network'):
+        self.neural.visualizeNetwork(filename)
