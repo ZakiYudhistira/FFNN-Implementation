@@ -24,12 +24,12 @@ class Layer:
         self.prev_n_nodes = prev_neurons+1
         self.activation_function = activation_function
         self.activation_function_derivative = activation_function_derivative
-        param1, param2, init_type = init_type
+        param1, param2, init_type, seed = init_type
 
         if init_type=="random-uniform":
-            self.initiateWeightRDUniform(lower_bound=param1, upper_bound=param2)
+            self.initiateWeightRDUniform(lower_bound=param1, upper_bound=param2, seed=seed)
         elif init_type=="random-normal":
-            self.initiateWeightRDNormal(mean=param1, variance=param2)
+            self.initiateWeightRDNormal(mean=param1, variance=param2, seed=seed)
         elif init_type=="xavier":
             self.initiateWeightXavier()
         elif init_type=="he":
@@ -221,7 +221,9 @@ class NeuralNetwork:
             with dot.subgraph(name=f'cluster_{layer_idx}') as c:
                 c.attr(label=f'Hidden Layer {layer_idx}')
                 c.attr(rank='same')  # Force same rank
-                layer.delta = np.random.rand(layer.n_neurons) if layer.delta is None else layer.delta
+                if layer.delta is None:
+                    layer.delta = np.random.rand(layer.n_neurons) # Debugging purposes
+                    print("Layer delta is None, assigning random values.")
                 for neuron_idx in range(layer.n_neurons):
                     delta_val = f'\nδ={layer.delta[neuron_idx]:.4f}' if layer.delta is not None else ''
                     func_name = self.hidden_layers_function_strings[layer_idx-1]
@@ -235,7 +237,9 @@ class NeuralNetwork:
             c.attr(label='Output Layer')
             c.attr(rank='same')  # Force same rank
             output_layer = self.layers[-1]
-            output_layer.delta = np.random.rand(output_layer.n_neurons) if output_layer.delta is None else output_layer.delta
+            if output_layer.delta is None:
+                print("Output layer delta is None, assigning random values.")
+                output_layer.delta = np.random.rand(output_layer.n_neurons)
             for neuron_idx in range(output_layer.n_neurons):
                 delta_val = f'\nδ={output_layer.delta[neuron_idx]:.4f}' if output_layer.delta is not None else ''
                 func_name = self.output_layer_function_string
@@ -395,11 +399,11 @@ class Engine():
     
     def saveANNtoPickle(self, name):
         neural_save = NeuralNetworkSave(self.neural)
-        with open(f"{SAVE_PATH}{name}.pkl", "wb") as f:
+        with open(f"{SAVE_PATH}{name}", "wb") as f:
             pickle.dump(neural_save, f)
     
     def loadANNfromPickle(name):
-        with open(f"{LOAD_PATH}{name}.pkl", "rb") as f:
+        with open(f"{LOAD_PATH}{name}", "rb") as f:
             neural_save_config = pickle.load(f)
             neural = NeuralNetwork(neural_save=neural_save_config)
             return neural
