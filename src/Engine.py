@@ -97,7 +97,11 @@ class NeuralNetwork:
                  hidden_layers_function_strings: list[str] = None,
                  output_layer_function_string: list[str] = None,
                  error_function_string: list[str] = None,
-                 neural_save: NeuralNetworkSave = None):
+                 neural_save: NeuralNetworkSave = None,
+                 lambda_l1: float = 0.0,
+                 lambda_l2: float = 0.0):
+        self.lambda_l1 = lambda_l1
+        self.lambda_l2 = lambda_l2
         if neural_save is None:
             self.n_input = n_input
             self.n_output = n_output
@@ -396,6 +400,9 @@ class Engine():
             val_predictions = self.neural.forward(self.data_val)
             val_loss = self.error_function(self.data_val_class, val_predictions)
             print(f"Validation Loss after Epoch {i+1}: {val_loss}")
+        print("Finished training")
+        print("Final Validation Loss: ", val_loss)
+        print("Final Validation Predictions: ", val_predictions)
             
     def train_backprop(self) :
         for i in range(10):

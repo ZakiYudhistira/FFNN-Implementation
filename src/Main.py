@@ -173,25 +173,23 @@ def train(engine):
     if(choice.upper() == "Y"):
         print(">>> Begin training <<<")
         print(f">>> Batch size: {engine.batch_size}")
-        for i in range(engine.epochs):
-            print(f"Epoch {i+1}")
-            engine.batchTrain()
+        engine.batchTrain()
     else:
         print(">>> Skip training <<<")
-        print(">>> Do you want to save the ANN? (Y/N): ", end="")
-        while True:
-            try:
-                choice = input()
-                if (choice.upper() == "Y" or choice.upper() == "N"):
-                    break
-            except:
-                print(">>> Invalid input")
-        if(choice.upper() == "Y"):
-            name = input(">>> Enter name for the ANN: ")
-            engine.saveANNtoPickle(name)
-            print(f">>> {name} ANN saved <<<")
-        else:
-            print(">>> ANN not saved <<<")
+    print(">>> Do you want to save the ANN? (Y/N): ", end="")
+    while True:
+        try:
+            choice = input()
+            if (choice.upper() == "Y" or choice.upper() == "N"):
+                break
+        except:
+            print(">>> Invalid input")
+    if(choice.upper() == "Y"):
+        name = input(">>> Enter name for the ANN: ")
+        engine.saveANNtoPickle(name)
+        print(f">>> {name} ANN saved <<<")
+    else:
+        print(">>> ANN not saved <<<")
 
 def visualize(engine):
     print(">>> Visualizing <<<")
@@ -204,9 +202,45 @@ def visualize(engine):
         except:
             print(">>> Invalid input")
     if(choice.upper() == "Y"):
-        engine.visualizeNetwork("Jaki")
+        file_name = input(">>> Enter name for the File: ")
+        engine.visualizeNetwork(file_name)
     else:
         print(">>> Skip visualization <<<")
+
+def showWeightDistribution(engine):
+    print(">>> Show weight distribution <<<")
+    print("Do you want to show weight distribution? (Y/N): ", end="")
+    while True:
+        try:
+            choice = input()
+            if (choice.upper() == "Y" or choice.upper() == "N"):
+                break
+        except:
+            print(">>> Invalid input")
+    if(choice.upper() == "Y"):
+        print(f">>> There are {engine.neural.n_hiddenlayer} hidden layers in the ANN")
+        layers_to_show = input(">>> Enter layers to show (eg:0 1 2 3 4 5): ")
+        layers_to_show = layers_to_show.split()
+        layers_to_show = [int(layer) for layer in layers_to_show]
+        engine.neural.displayWeightDistribution(layers_to_show)
+    else:
+        print(">>> Skip weight distribution <<<")
+
+    print(">>> Show delta distribution <<<")
+    print("Do you want to show delta distribution? (Y/N): ", end="")
+    while True:
+        try:
+            choice = input()
+            if (choice.upper() == "Y" or choice.upper() == "N"):
+                break
+        except:
+            print(">>> Invalid input")
+    if(choice.upper() == "Y"):
+        print(f">>> There are {engine.neural.n_hiddenlayer} hidden layers in the ANN")
+        layers_to_show = input(">>> Enter layers to show (eg:0 1 2 3 4 5): ")
+        layers_to_show = layers_to_show.split()
+        layers_to_show = [int(layer) for layer in layers_to_show]
+        engine.neural.displayDeltaDistribution(layers_to_show)
         
 
 data_train, data_train_class = loadPickle()
@@ -220,10 +254,35 @@ data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
 # else:
 #     main_engine = initiateEngine(main_config, data_train, data_train_class)
 # train(main_engine)
-# visualize(main_engine)
+# showWeightDistribution(main_engine)
 
-neural = Engine.Engine.loadANNfromPickle("New2")
-main_engine = initiateEngine(config=None, data_train=data_train, data_train_class=data_train_class, neural=neural)
-main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
+# neural = Engine.Engine.loadANNfromPickle("New2")
+# main_engine = initiateEngine(config=None, data_train=data_train, data_train_class=data_train_class, neural=neural)
+# main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
+# main_engine.batchTrain()
+# main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
+
+
+# main_engine = initiateEngine(Configuration.loadConfigfromJSON(f"./config/config1_length.json"), data_train, data_train_class)
+# main_engine.batchTrain()
+# main_engine.neural.displayWeightDistribution([0, 1, 2, 8])
+# main_engine.neural.displayDeltaDistribution([0, 1, 2, 8])
+# main_engine.saveANNtoPickle("config1_length")
+
+# main_engine = initiateEngine(Configuration.loadConfigfromJSON(f"./config/config2_length.json"), data_train, data_train_class)
+# main_engine.batchTrain()
+# main_engine.saveANNtoPickle("config2_length")
+# main_engine.neural.displayWeightDistribution([0, 1, 2, 3])
+# main_engine.neural.displayDeltaDistribution([0, 1, 2, 3])
+
+# main_engine = initiateEngine(Configuration.loadConfigfromJSON(f"./config/config3_length.json"), data_train, data_train_class)
+# # main_engine.batchTrain()
+# neural = Engine.Engine.loadANNfromPickle("config3_length")
+# neural.displayWeightDistribution([0, 1, 2])
+# neural.displayDeltaDistribution([0, 1, 2])
+
+main_engine = initiateEngine(Configuration.loadConfigfromJSON(f"./config/config4_length.json"), data_train, data_train_class)
 main_engine.batchTrain()
+main_engine.saveANNtoPickle("config4_length")
 main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
+main_engine.neural.displayDeltaDistribution([0, 1, 2, 3, 4])
