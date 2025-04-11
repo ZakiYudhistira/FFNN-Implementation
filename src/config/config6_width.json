@@ -1,0 +1,32 @@
+{
+    "config_name": "VansonK_Sigmoid_20Layers",
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "epochs": 5,
+    "loss_function": "mean_squared_error",
+    "hidden_layer_count": 5,
+    "hidden_layer_sizes": [
+        2,
+        4,
+        8,
+        16,
+        32
+    ],
+    "hidden_layer_activations": [
+        "sigmoid",
+        "sigmoid",
+        "sigmoid",
+        "sigmoid",
+        "sigmoid"
+    ],
+    "output_activation": "sigmoid",
+    "bias": 1.0,
+    "init_type": [
+        0.0,
+        0.2,
+        "random-uniform",
+        5
+    ],
+    "data_train": null,
+    "data_train_class": null
+}

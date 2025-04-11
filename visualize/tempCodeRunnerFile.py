@@ -1,1 +1,0 @@
-i * layer_spacing

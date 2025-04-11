@@ -372,6 +372,10 @@ class Engine():
         )
         print(f"Batch size: {self.batch_size}")
         print(f"Learning rate: {self.learning_rate}")
+
+        self.train_errors = []
+        self.val_errors = []
+
         for i in range(self.epochs):
             print(f"Epoch {i+1}/{self.epochs}")
             batch_count = (self.data_train.shape[0] + self.batch_size - 1) // self.batch_size  # Calculate total batches
@@ -399,7 +403,14 @@ class Engine():
 
             val_predictions = self.neural.forward(self.data_val)
             val_loss = self.error_function(self.data_val_class, val_predictions)
+            self.val_errors.append(val_loss)
+
+            train_predictions = self.neural.forward(self.data_train)
+            train_loss = self.error_function(self.data_train_class, train_predictions)
+            self.train_errors.append(train_loss)
             print(f"Validation Loss after Epoch {i+1}: {val_loss}")
+            print(f"Training Loss after Epoch {i+1}: {train_loss}")
+
         print("Finished training")
         print("Final Validation Loss: ", val_loss)
         print("Final Validation Predictions: ", val_predictions)
@@ -422,3 +433,22 @@ class Engine():
     
     def visualizeNetwork(self, filename='neural_network'):
         self.neural.visualizeNetwork(filename)
+    
+    def plotErrors(self):
+        import matplotlib.pyplot as plt
+
+        if not hasattr(self, 'train_errors') or not hasattr(self, 'val_errors'):
+            print("Error: Training and validation errors are not available. Train the model first.")
+            return
+
+        epochs = range(1, len(self.train_errors) + 1)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs, self.train_errors, label='Training Error', marker='o')
+        plt.plot(epochs, self.val_errors, label='Validation Error', marker='o')
+        plt.title('Training and Validation Error per Epoch')
+        plt.xlabel('Epoch')
+        plt.ylabel('Error')
+        plt.legend()
+        plt.grid(True)
+        plt.show()

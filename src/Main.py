@@ -246,15 +246,15 @@ def showWeightDistribution(engine):
 data_train, data_train_class = loadPickle()
 data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
 
-# main_config, flag = start_program()
-# if(flag):
-#     main_engine = main_config
-#     main_engine.data_train = data_train
-#     main_engine.data_train_class = data_train_class
-# else:
-#     main_engine = initiateEngine(main_config, data_train, data_train_class)
-# train(main_engine)
-# showWeightDistribution(main_engine)
+main_config, flag = start_program()
+if(flag):
+    main_engine = main_config
+    main_engine.data_train = data_train
+    main_engine.data_train_class = data_train_class
+else:
+    main_engine = initiateEngine(main_config, data_train, data_train_class)
+train(main_engine)
+showWeightDistribution(main_engine)
 
 # neural = Engine.Engine.loadANNfromPickle("New2")
 # main_engine = initiateEngine(config=None, data_train=data_train, data_train_class=data_train_class, neural=neural)
@@ -281,8 +281,9 @@ data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
 # neural.displayWeightDistribution([0, 1, 2])
 # neural.displayDeltaDistribution([0, 1, 2])
 
-main_engine = initiateEngine(Configuration.loadConfigfromJSON(f"./config/config4_length.json"), data_train, data_train_class)
-main_engine.batchTrain()
-main_engine.saveANNtoPickle("config4_length")
-main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
-main_engine.neural.displayDeltaDistribution([0, 1, 2, 3, 4])
+# main_engine = initiateEngine(Configuration.loadConfigfromJSON(f"./config/config8_func.json"), data_train, data_train_class)
+# main_engine.batchTrain()
+# main_engine.plotErrors()
+# main_engine.saveANNtoPickle("config8_func")
+# main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
+# main_engine.neural.displayDeltaDistribution([0, 1, 2, 3, 4])
