@@ -114,7 +114,7 @@ def start_program():
     return config, False
 
 def initiateEngine(config: Configuration, data_train, data_train_class, neural: Engine.NeuralNetwork = None):
-    if Engine.NeuralNetwork is None:
+    if neural is None:
         hidden_layer_activations = [activation_functions_dict[func] for func in config.hidden_layer_activations]
         hidden_layer_activations_derivative = [activation_functions_dict_derivative[func] for func in config.hidden_layer_activations]
 
@@ -143,9 +143,14 @@ def initiateEngine(config: Configuration, data_train, data_train_class, neural: 
                                 neural_network=neural,
                                 error_function=loss_functions_dict[config.loss_function])
     else:
-        learning_rate = 0.1 # ms.getPositiveFLoat(">>> Input learning rate: ")
-        epochs = 1 # ms.getPositiveInteger(">>> Input epochs: ")
-        batch_size = 5 # ms.getPositiveInteger(">>> Input batch size: ")
+        if(not True):
+            ms.getPositiveFLoat(">>> Input learning rate: ")
+            ms.getPositiveInteger(">>> Input epochs: ")
+            ms.getPositiveInteger(">>> Input batch size: ")
+        else:
+            learning_rate = 0.1 # ms.getPositiveFLoat(">>> Input learning rate: ")
+            epochs = 1 # ms.getPositiveInteger(">>> Input epochs: ")
+            batch_size = 5 # ms.getPositiveInteger(">>> Input batch size: ")
         main_engine = Engine.Engine(data_train=data_train,
                                 data_train_class=data_train_class,
                                 learning_rate=learning_rate,
@@ -203,22 +208,22 @@ def visualize(engine):
     else:
         print(">>> Skip visualization <<<")
         
-# main_config, flag = start_program()
+main_config, flag = start_program()
 
 data_train, data_train_class = loadPickle()
 data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
 # print(data_train_class.shape)
 
-# if(flag):
-#     main_engine = main_config
-#     main_engine.data_train = data_train
-#     main_engine.data_train_class = data_train_class
-# else:
-#     main_engine = initiateEngine(main_config, data_train, data_train_class)
-# train(main_engine)
+if(flag):
+    main_engine = main_config
+    main_engine.data_train = data_train
+    main_engine.data_train_class = data_train_class
+else:
+    main_engine = initiateEngine(main_config, data_train, data_train_class)
+train(main_engine)
 # visualize(main_engine)
 
-neural = Engine.Engine.loadANNfromPickle("save1")
+neural = Engine.Engine.loadANNfromPickle("save1.pkl")
 main_engine = initiateEngine(config=None, data_train=None, data_train_class=None, neural=neural)
 main_engine.neural.displayDeltaDistribution([0,1,2,3])
 # main_engine.visualizeNetwork("Jaki")

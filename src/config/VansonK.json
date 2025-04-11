@@ -1,0 +1,30 @@
+{
+    "config_name": "VansonK",
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "epochs": 10,
+    "loss_function": "mean_squared_error",
+    "hidden_layer_count": 4,
+    "hidden_layer_sizes": [
+        8,
+        8,
+        8,
+        8
+    ],
+    "hidden_layer_activations": [
+        "relu",
+        "sigmoid",
+        "tanh",
+        "linear"
+    ],
+    "output_activation": "softmax",
+    "bias": 1.0,
+    "init_type": [
+        0.0,
+        1.0,
+        "random-uniform",
+        5
+    ],
+    "data_train": null,
+    "data_train_class": null
+}
