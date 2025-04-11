@@ -1,14 +1,3 @@
-import numpy as np
-
-# Activation functions
-activation_functions = {
-    "relu": lambda x: np.maximum(0, x),
-    "sigmoid": lambda x: 1 / (1 + np.exp(-x)),
-    "tanh": np.tanh,
-    "linear": lambda x: x,
-    "softmax": lambda x: np.exp(x - np.max(x)) / np.sum(np.exp(x - np.max(x)), axis=-1, keepdims=True)
-}
-
 def getPositiveInteger(prompt):
     while True:
         try:

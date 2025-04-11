@@ -6,23 +6,28 @@ from Classes import Configuration
 import numpy as np
 from FuncDictionaries import activation_functions_dict, activation_functions_dict_derivative, loss_functions_dict, loss_functions_dict_derivative
 
+# Load config
+DATASET_LOAD_PATH = './data/mnist_784.arff'
+PICKLED_TRAIN_DATA_SAVE_PATH = './data/test_data_train'
+PICKLED_CLASS_DATA_SAVE_PATH = './data/test_data_train_class'
+
 def savePickle():
-    loader = DataLoader.DataLoader('./data/mnist_784.arff')
+    loader = DataLoader.DataLoader(DATASET_LOAD_PATH)
     data_train, data_train_class = loader.load_data()
-    data_train_temp = open('./data/test_data_train', 'wb')
+    data_train_temp = open(PICKLED_TRAIN_DATA_SAVE_PATH, 'wb')
     pickle.dump(data_train, data_train_temp)
     data_train_temp.close()
 
-    data_train_class_temp = open('./data/test_data_train_class', 'wb')
+    data_train_class_temp = open(PICKLED_CLASS_DATA_SAVE_PATH, 'wb')
     pickle.dump(data_train_class, data_train_class_temp)
     data_train_class_temp.close()
 
 def loadPickle():
-    data_train_temp = open('./data/test_data_train', 'rb')
+    data_train_temp = open(PICKLED_TRAIN_DATA_SAVE_PATH, 'rb')
     data_train = pickle.load(data_train_temp)
     data_train_temp.close()
 
-    data_train_class_temp = open('./data/test_data_train_class', 'rb')
+    data_train_class_temp = open(PICKLED_CLASS_DATA_SAVE_PATH, 'rb')
     data_train_class = pickle.load(data_train_class_temp)
     data_train_class_temp.close()
 
@@ -215,4 +220,5 @@ data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
 
 neural = Engine.Engine.loadANNfromPickle("save1")
 main_engine = initiateEngine(config=None, data_train=None, data_train_class=None, neural=neural)
-main_engine.visualizeNetwork("Jaki")
+main_engine.neural.displayDeltaDistribution([0,1,2,3])
+# main_engine.visualizeNetwork("Jaki")

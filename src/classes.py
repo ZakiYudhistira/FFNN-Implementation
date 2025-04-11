@@ -87,12 +87,3 @@ class Configuration:
                              init_type=config_dict["init_type"],
                              data_train=np.array(config_dict["data_train"]),
                              data_train_class=np.array(config_dict["data_train_class"]))
-
-class Neuron:
-    def __init__(self, value=0):
-        self.value = value
-
-class Weight:
-    def __init__(self, weight_type: str, parameter: list[float, float, float]):
-        self.type = weight_type
-        self.parameter = parameter

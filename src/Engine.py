@@ -5,6 +5,12 @@ import pickle
 from FuncDictionaries import activation_functions_dict, activation_functions_dict_derivative, loss_functions_dict, loss_functions_dict_derivative
 from typing import Callable, List, Tuple
 from graphviz import Digraph
+import os
+
+# Savepath config
+SAVE_PATH = "./NeuralNetworks/"
+LOAD_PATH = "./NeuralNetworks/"
+IMAGE_PATH = "./NeuralNetworks/Images/"
 
 class Layer:
     def __init__(self,
@@ -190,7 +196,6 @@ class NeuralNetwork:
             print(res)
     
     def visualizeNetwork(self, filename='neural_network'):
-        self.printSpec()
         """
         Creates a visual representation of the neural network using graphviz.
         Each neuron shows its delta value and activation function,
@@ -210,41 +215,32 @@ class NeuralNetwork:
                 c.node(f'i{i}', f'Input {i}')
             c.node(f'i{self.n_input}', 'Bias')
 
-            # for i in range(self.n_input):
-            #     if i < self.n_input - 1:
-            #         c.edge(f'i{i}', f'i{i+1}', style='invis')
         
         # hidden layers
         for layer_idx, layer in enumerate(self.layers[:-1], 1):
             with dot.subgraph(name=f'cluster_{layer_idx}') as c:
                 c.attr(label=f'Hidden Layer {layer_idx}')
                 c.attr(rank='same')  # Force same rank
+                layer.delta = np.random.rand(layer.n_neurons) if layer.delta is None else layer.delta
                 for neuron_idx in range(layer.n_neurons):
-                    layer.delta = np.random.rand(layer.n_neurons) if layer.delta is None else layer.delta
                     delta_val = f'\nδ={layer.delta[neuron_idx]:.4f}' if layer.delta is not None else ''
                     func_name = self.hidden_layers_function_strings[layer_idx-1]
                     c.node(f'h{layer_idx}_{neuron_idx}', 
                         f'Neuron {neuron_idx}\n{func_name}{delta_val}')
                 c.node(f'h{layer_idx}_bias', 'Bias')
 
-                # for i in range(layer.n_neurons):
-                #     if i < layer.n_neurons - 1:
-                #         c.edge(f'h{layer_idx}_{i}', f'h{layer_idx}_{i+1}', style='invis')
-                # c.edge(f'h{layer_idx}_{layer.n_neurons-1}', f'h{layer_idx}_bias', style='invis')
         
         # output layer
         with dot.subgraph(name=f'cluster_{len(self.layers)}') as c:
             c.attr(label='Output Layer')
             c.attr(rank='same')  # Force same rank
             output_layer = self.layers[-1]
+            output_layer.delta = np.random.rand(output_layer.n_neurons) if output_layer.delta is None else output_layer.delta
             for neuron_idx in range(output_layer.n_neurons):
                 delta_val = f'\nδ={output_layer.delta[neuron_idx]:.4f}' if output_layer.delta is not None else ''
                 func_name = self.output_layer_function_string
                 c.node(f'o{neuron_idx}', 
                     f'Output {neuron_idx}\n{func_name}{delta_val}')
-
-            # for i in range(output_layer.n_neurons - 1):
-            #     c.edge(f'o{i}', f'o{i+1}', style='invis')
         
         # Add edges with weights
         # Connect input to first hidden layer
@@ -278,7 +274,61 @@ class NeuralNetwork:
                 dot.edge(node_id, f'o{j}', f'{weight:.2f}')
         
         # Saving
-        dot.render(filename, view=True, format='svg')
+        output_path = dot.render(IMAGE_PATH+filename, view=True, format='svg')
+        output_path = output_path.replace('.svg', '')
+        if os.path.exists(output_path):
+            os.remove(output_path)
+    
+    def displayWeightDistribution(self, layer_idx: list[int]):
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(len(layer_idx), 1, figsize=(8, 5 * len(layer_idx)))
+        if len(layer_idx) == 1:
+            axes = [axes]
+        for ax, number in zip(axes, layer_idx):
+            layer = self.layers[number]
+            weights = layer.weight_matrix.flatten()
+            ax.hist(weights, bins=30, alpha=0.75, color='blue', edgecolor='black')
+            if number == len(self.layers)-1:
+                ax.set_title(f'Weight Distribution for Output Layer')
+            else:
+                ax.set_title(f'Weight Distribution for Hidden Layer {number+1}')
+            ax.set_xlabel('Weight Value')
+            ax.set_ylabel('Frequency')
+            ax.grid(True)
+        plt.subplots_adjust(hspace=0.5)
+        plt.show()
+
+    def displayDeltaDistribution(self, layer_idx: list[int]):
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(len(layer_idx), 1, figsize=(8, 5 * len(layer_idx)))
+        if len(layer_idx) == 1:
+            axes = [axes]
+        
+        has_data = False
+        
+        for ax, number in zip(axes, layer_idx):
+            layer = self.layers[number]
+            if layer.delta is None:
+                print(f"Layer {number} has no delta values to display.")
+                continue
+                
+            has_data = True
+            deltas = layer.delta.flatten()
+            ax.hist(deltas, bins=30, alpha=0.75, color='blue', edgecolor='black')
+            if number == len(self.layers)-1:
+                ax.set_title(f'Delta Distribution for Output Layer')
+            else:
+                ax.set_title(f'Delta Distribution for Hidden Layer {number+1}')
+            ax.set_xlabel('Delta Value')
+            ax.set_ylabel('Frequency')
+            ax.grid(True)
+        
+        if not has_data:
+            print("No delta values to display for the selected layers.")
+            plt.close(fig)
+        else:
+            plt.subplots_adjust(hspace=0.5)
+            plt.show()
 
     def printSpec(self):
         print(f"Input: {self.n_input}")
@@ -345,11 +395,11 @@ class Engine():
     
     def saveANNtoPickle(self, name):
         neural_save = NeuralNetworkSave(self.neural)
-        with open(f"./NeuralNetworks/{name}.pkl", "wb") as f:
+        with open(f"{SAVE_PATH}{name}.pkl", "wb") as f:
             pickle.dump(neural_save, f)
     
     def loadANNfromPickle(name):
-        with open(f"./NeuralNetworks/{name}.pkl", "rb") as f:
+        with open(f"{LOAD_PATH}{name}.pkl", "rb") as f:
             neural_save_config = pickle.load(f)
             neural = NeuralNetwork(neural_save=neural_save_config)
             return neural
