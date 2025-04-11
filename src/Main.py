@@ -148,9 +148,9 @@ def initiateEngine(config: Configuration, data_train, data_train_class, neural: 
             ms.getPositiveInteger(">>> Input epochs: ")
             ms.getPositiveInteger(">>> Input batch size: ")
         else:
-            learning_rate = 0.1 # ms.getPositiveFLoat(">>> Input learning rate: ")
-            epochs = 1 # ms.getPositiveInteger(">>> Input epochs: ")
-            batch_size = 5 # ms.getPositiveInteger(">>> Input batch size: ")
+            learning_rate = 0.01 # ms.getPositiveFLoat(">>> Input learning rate: ")
+            epochs = 10 # ms.getPositiveInteger(">>> Input epochs: ")
+            batch_size = 32 # ms.getPositiveInteger(">>> Input batch size: ")
         main_engine = Engine.Engine(data_train=data_train,
                                 data_train_class=data_train_class,
                                 learning_rate=learning_rate,
@@ -208,22 +208,22 @@ def visualize(engine):
     else:
         print(">>> Skip visualization <<<")
         
-main_config, flag = start_program()
 
 data_train, data_train_class = loadPickle()
 data_train_class = np.eye(np.max(data_train_class) + 1)[data_train_class]
-# print(data_train_class.shape)
 
-if(flag):
-    main_engine = main_config
-    main_engine.data_train = data_train
-    main_engine.data_train_class = data_train_class
-else:
-    main_engine = initiateEngine(main_config, data_train, data_train_class)
-train(main_engine)
+# main_config, flag = start_program()
+# if(flag):
+#     main_engine = main_config
+#     main_engine.data_train = data_train
+#     main_engine.data_train_class = data_train_class
+# else:
+#     main_engine = initiateEngine(main_config, data_train, data_train_class)
+# train(main_engine)
 # visualize(main_engine)
 
-neural = Engine.Engine.loadANNfromPickle("save1.pkl")
-main_engine = initiateEngine(config=None, data_train=None, data_train_class=None, neural=neural)
-main_engine.neural.displayDeltaDistribution([0,1,2,3])
-# main_engine.visualizeNetwork("Jaki")
+neural = Engine.Engine.loadANNfromPickle("New2")
+main_engine = initiateEngine(config=None, data_train=data_train, data_train_class=data_train_class, neural=neural)
+main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])
+main_engine.batchTrain()
+main_engine.neural.displayWeightDistribution([0, 1, 2, 3, 4])

@@ -1,11 +1,12 @@
 from __future__ import annotations
-import numpy as np
-import random as rd
-import pickle
 from FuncDictionaries import activation_functions_dict, activation_functions_dict_derivative, loss_functions_dict, loss_functions_dict_derivative
 from typing import Callable, List, Tuple
 from graphviz import Digraph
+from tqdm import tqdm
+import numpy as np
+import pickle
 import os
+from sklearn.model_selection import train_test_split
 
 # Savepath config
 SAVE_PATH = "./NeuralNetworks/"
@@ -51,9 +52,10 @@ class Layer:
         self.output = self.activation_function(ret)
         return self.output
     
-    def update_weights(self, input_array, learning_rate):
-        """ Update weights using backpropagation gradient descent """
-        gradient = np.outer(input_array, self.delta)
+    def updateWeights(self, input_array, learning_rate):
+        self.delta = self.delta.astype(np.float64)
+        input_array = input_array.astype(np.float64)
+        gradient = input_array.T @ self.delta / input_array.shape[0]
         self.weight_matrix -= learning_rate * gradient
         
     def initiateWeightRDUniform(self, seed=0, lower_bound=0, upper_bound=1):
@@ -147,60 +149,41 @@ class NeuralNetwork:
             self.layers.append(Layer(self.hidden_layers_size[i], self.hidden_layers_size[i-1], self.hidden_layers_function[i], self.hidden_layers_function_derivative[i], bias, self.init_type))
         self.layers.append(Layer(self.n_output, self.hidden_layers_size[-1], self.output_layer_function, self.output_layer_function_derivative, bias, self.init_type))
     
-    def forward(self, input_array):
-        self.input_array = input_array # Store input for backpropagation
-        for layer in self.layers:
-            input_array = np.append(input_array, 1) # Add bias term
-            input_array = layer.multiply(input_array)
-        return input_array
-    
-    def forwardBatch(self, input_matrix):
+    def forward(self, input_matrix):
         for layer in self.layers:
             input_matrix = np.append(input_matrix, np.ones((input_matrix.shape[0], 1)), axis=1)
             input_matrix = layer.multiply(input_matrix)
         return input_matrix
     
-    def backward(self, expected_output, learning_rate):
+    def backward(self, input_array, forwarded_result, expected_output, learning_rate):
         last_layer = self.layers[-1]
-        last_layer.delta = (last_layer.output - expected_output) * self.output_layer_function_derivative(last_layer.output)
+        # Calculate delta for the output layer
+        last_layer.delta = (forwarded_result - expected_output) * self.output_layer_function_derivative(last_layer.output)
 
+        # Backpropagate through the hidden layers
         for i in reversed(range(len(self.layers) - 1)):
             layer = self.layers[i]
             next_layer = self.layers[i + 1]
 
-            error_term = np.dot(next_layer.weight_matrix[:-1, :], next_layer.delta)
+            # Calculate the error term for the current layer
+            error_term = np.dot(next_layer.delta, next_layer.weight_matrix[:-1, :].T)
             layer.delta = error_term * layer.activation_function_derivative(layer.output)
 
+        batch_size = input_array.shape[0]
         for i, layer in enumerate(self.layers):
-            input_array = np.append(self.layers[i - 1].output, 1) if i > 0 else np.append(self.input_array, 1)
-            layer.update_weights(input_array, learning_rate)
+            if i == 0:
+                input_with_bias = np.hstack((input_array, np.ones((batch_size, 1))))
+            else:
+                prev_output = self.layers[i - 1].output
+                input_with_bias = np.hstack((prev_output, np.ones((batch_size, 1))))
 
-    def train(self, inputs, expected_outputs, epochs, learning_rate):
-        for epoch in range(epochs):
-            total_loss = 0
-            for i in range(len(inputs)):
-                output = self.forward(inputs[i])
-                self.backward(expected_outputs[i], learning_rate)
-                total_loss += np.mean((expected_outputs[i] - output) ** 2)
+            layer.updateWeights(input_with_bias, learning_rate)
 
-            avg_loss = total_loss / len(inputs)
-            print(f"Epoch {epoch + 1}, Loss: {avg_loss:.5f}")
-            loss = np.mean((expected_outputs - self.forward(inputs)) ** 2)
-            print(f"Epoch {epoch}, Loss: {loss:.5f}")
-    
-    def trainBatch(self, inputs, expected_outputs, epochs, learning_rate):
-        counter = 0
-        while(True):
-            res = self.neural.forwardBatch(inputs)
-            self.neural.backward(expected_outputs, learning_rate)
-            print(res)
+    def train(self, inputs_batch, expected_outputs, learning_rate):
+        forward_result = self.forward(inputs_batch)
+        self.backward(inputs_batch, forward_result, expected_outputs, learning_rate)
     
     def visualizeNetwork(self, filename='neural_network'):
-        """
-        Creates a visual representation of the neural network using graphviz.
-        Each neuron shows its delta value and activation function,
-        and edges show weights.
-        """
         dot = Digraph(comment='Neural Network Visualization')
         dot.attr(rankdir='LR')
         dot.attr('graph', nodesep='1.5') 
@@ -378,19 +361,41 @@ class Engine():
 
         self.neural = neural_network
     
-    def batchTrain(self):
-        counter = 0
-        while(counter <= self.data_train.shape[0]):
-            upper_index = min(counter+self.batch_size, self.data_train.shape[0])
-            batch_process = self.data_train[counter:upper_index]
-            expected_result = self.data_train_class[counter:upper_index]
-            counter += self.batch_size
+    def batchTrain(self, debug=False):
+        # Split the data into training and validation sets (80% train, 20% validation)
+        self.data_train, self.data_val, self.data_train_class, self.data_val_class = train_test_split(
+            self.data_train, self.data_train_class, test_size=0.2, random_state=42
+        )
+        print(f"Batch size: {self.batch_size}")
+        print(f"Learning rate: {self.learning_rate}")
+        for i in range(self.epochs):
+            print(f"Epoch {i+1}/{self.epochs}")
+            batch_count = (self.data_train.shape[0] + self.batch_size - 1) // self.batch_size  # Calculate total batches
+            
+            if debug:
+                print("Debug mode: Progress bar disabled.")
+                for batch_counter in range(1, batch_count + 1):
+                    start_index = (batch_counter - 1) * self.batch_size
+                    upper_index = min(start_index + self.batch_size, self.data_train.shape[0])
+                    batch_data = self.data_train[start_index:upper_index]
+                    expected_result = self.data_train_class[start_index:upper_index]
 
-            result = self.neural.forwardBatch(batch_process)
+                    result = self.neural.train(batch_data, expected_result, self.learning_rate)
+                    print(f"Batch {batch_counter}/{batch_count} processed.")
+            else:
+                with tqdm(total=batch_count, desc="Training Progress", unit="batch") as pbar:
+                    for batch_counter in range(1, batch_count + 1):
+                        start_index = (batch_counter - 1) * self.batch_size
+                        upper_index = min(start_index + self.batch_size, self.data_train.shape[0])
+                        batch_data = self.data_train[start_index:upper_index]
+                        expected_result = self.data_train_class[start_index:upper_index]
 
-            error = self.error_function(expected_result, result)
-            print(f"Error: {error}")
-            break
+                        self.neural.train(batch_data, expected_result, self.learning_rate)
+                        pbar.update(1)
+
+            val_predictions = self.neural.forward(self.data_val)
+            val_loss = self.error_function(self.data_val_class, val_predictions)
+            print(f"Validation Loss after Epoch {i+1}: {val_loss}")
             
     def train_backprop(self) :
         for i in range(10):

@@ -2,7 +2,7 @@ import numpy as np
 
 activation_functions_dict = {
     "relu": lambda x: np.maximum(0, x),
-    "sigmoid": lambda x: 1 / (1 + np.exp(-x)),
+    "sigmoid": lambda x: 1 / (1 + np.exp(-np.clip(x, -500, 500))),
     "tanh": np.tanh,
     "linear": lambda x: x,
     "softmax": lambda x: np.exp(x - np.max(x)) / np.sum(np.exp(x - np.max(x)), axis=-1, keepdims=True)

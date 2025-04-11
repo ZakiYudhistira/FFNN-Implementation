@@ -17,7 +17,7 @@
         "tanh",
         "linear"
     ],
-    "output_activation": "softmax",
+    "output_activation": "sigmoid",
     "bias": 1.0,
     "init_type": [
         0.0,
